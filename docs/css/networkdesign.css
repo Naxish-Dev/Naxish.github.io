@@ -64,14 +64,14 @@ header {
   background: #14532d;
 }
 
-/* FIXED RIGHT PANEL WIDTH */
 .main {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 340px;
+  grid-template-columns: 2fr 1fr;
   gap: 10px;
   flex: 1;
   min-height: 0;
 }
+
 
 #workspace {
   position: relative;
@@ -181,10 +181,6 @@ header {
   flex-direction: column;
   gap: 8px;
   font-size: 13px;
-
-  min-width: 320px;
-  max-width: 360px;
-  overflow-y: auto;
 }
 
 #details-panel.hidden {
