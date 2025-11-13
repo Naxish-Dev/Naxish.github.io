@@ -270,18 +270,9 @@ function handleLinkModeClick(deviceId, deviceEl) {
       return;
     }
 
-    const exists = links.some(
-      (l) =>
-        l.fromId === fromId &&
-        l.toId === toId &&
-        l.fromIfName === fromIfName &&
-        l.toIfName === toIfName
-    );
-
-    if (!exists) {
-      const id = `L${linkCounter++}`;
-      links.push({ id, fromId, fromIfName, toId, toIfName });
-    }
+    // Allow multiple links between same devices/interfaces
+    const id = `L${linkCounter++}`;
+    links.push({ id, fromId, fromIfName, toId, toIfName });
   }
 
   pendingLinkSourceId = null;
@@ -459,14 +450,13 @@ function renderInterfacesForDevice(dev) {
   }
 }
 
-// Infra: name + ip + mask
+// Infra: name + ip + mask  (NO MORE RANDOM RENAMING)
 function addInfraInterfaceRow(iface = {}) {
   const row = document.createElement("div");
   row.className = "interface-row";
   row.style.gridTemplateColumns = "1.2fr 1.2fr 1.2fr auto";
 
   const nameVal = iface.name || "";
-  row.dataset.ifName = nameVal || `IF-${Math.random().toString(36).slice(2, 8)}`;
 
   row.innerHTML = `
     <input class="if-name" placeholder="Gig0/0" value="${nameVal}">
@@ -485,8 +475,6 @@ function addEndpointInterfaceRow(iface = {}) {
   row.className = "interface-row";
   row.style.gridTemplateColumns = "0.9fr 1.2fr 1.2fr 1.2fr 1.2fr auto";
 
-  const nameVal = iface.name || "";
-  row.dataset.ifName = nameVal || `IF-${Math.random().toString(36).slice(2, 8)}`;
   const kind = iface.kind || "NIC";
 
   row.innerHTML = `
@@ -568,10 +556,8 @@ function collectInterfacesFromUI(devType) {
         return;
       }
 
-      const existingName = row.dataset.ifName;
-      const name = existingName || `IF-${Math.random().toString(36).slice(2, 8)}`;
-      row.dataset.ifName = name;
-
+      // Endpoint interfaces don't expose a name field – we can synthesize one if needed
+      const name = ifaceNameFromEndpoint(kind, interfaces.length);
       interfaces.push({ name, kind, ip, mask, gateway: gw, dns });
     });
   } else {
@@ -609,15 +595,18 @@ function collectInterfacesFromUI(devType) {
         return;
       }
 
-      const existingName = row.dataset.ifName;
-      const finalName = existingName || name || `IF-${Math.random().toString(36).slice(2, 8)}`;
-      row.dataset.ifName = finalName;
-
-      interfaces.push({ name: finalName, ip, mask });
+      // IMPORTANT: use the name exactly as the user typed it (g0/0 stays g0/0)
+      interfaces.push({ name, ip, mask });
     });
   }
 
   return { interfaces, hasError };
+}
+
+function ifaceNameFromEndpoint(kind, index) {
+  // For endpoints (client/server/host/IoT) we can name internal interfaces NIC1/WIFI1 etc.
+  const base = kind === "WIFI" ? "WIFI" : "NIC";
+  return `${base}${index + 1}`;
 }
 
 // --- IP validation helpers ---
@@ -752,7 +741,6 @@ function getLinkColor(link) {
     }
   }
 
-  // Fallback: any shared subnet between devices
   const fromIfs = from.interfaces || [];
   const toIfs = to.interfaces || [];
   let sharedNet = null;
@@ -828,7 +816,6 @@ function hideLinkDetails() {
 }
 
 workspace.addEventListener("click", (e) => {
-  // Don't hide if we clicked on a device (drag/select)
   if (e.target.closest(".device")) return;
   hideLinkDetails();
 });
@@ -837,7 +824,7 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") hideLinkDetails();
 });
 
-// --- Render links (SVG lines) ---
+// --- Render links (SVG lines) with PARALLEL OFFSET for multiple links ---
 function renderLinks() {
   const wsRect = workspace.getBoundingClientRect();
   const width = workspace.clientWidth;
@@ -847,38 +834,69 @@ function renderLinks() {
   linksLayer.setAttribute("height", height);
   linksLayer.innerHTML = "";
 
+  // Group links by device pair only (so all links between same two boxes become parallel)
+  const groups = {};
   links.forEach((link) => {
-    const fromEl = workspace.querySelector(`.device[data-id="${link.fromId}"]`);
-    const toEl = workspace.querySelector(`.device[data-id="${link.toId}"]`);
+    const key = [link.fromId, link.toId].sort().join("|");
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(link);
+  });
 
-    if (!fromEl || !toEl) return;
+  Object.values(groups).forEach((group) => {
+    const n = group.length;
+    group.forEach((link, indexInGroup) => {
+      const fromEl = workspace.querySelector(`.device[data-id="${link.fromId}"]`);
+      const toEl = workspace.querySelector(`.device[data-id="${link.toId}"]`);
+      if (!fromEl || !toEl) return;
 
-    const fromRect = fromEl.getBoundingClientRect();
-    const toRect = toEl.getBoundingClientRect();
+      const fromRect = fromEl.getBoundingClientRect();
+      const toRect = toEl.getBoundingClientRect();
 
-    const x1 = fromRect.left - wsRect.left + fromRect.width / 2;
-    const y1 = fromRect.top - wsRect.top + fromRect.height / 2;
-    const x2 = toRect.left - wsRect.left + toRect.width / 2;
-    const y2 = toRect.top - wsRect.top + toRect.height / 2;
+      const x1 = fromRect.left - wsRect.left + fromRect.width / 2;
+      const y1 = fromRect.top - wsRect.top + fromRect.height / 2;
+      const x2 = toRect.left - wsRect.left + toRect.width / 2;
+      const y2 = toRect.top - wsRect.top + toRect.height / 2;
 
-    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-    line.setAttribute("x1", x1);
-    line.setAttribute("y1", y1);
-    line.setAttribute("x2", x2);
-    line.setAttribute("y2", y2);
-    line.setAttribute("stroke-width", "2");
-    line.setAttribute("stroke-linecap", "round");
-    line.setAttribute("pointer-events", "stroke");
+      let x1o = x1;
+      let y1o = y1;
+      let x2o = x2;
+      let y2o = y2;
 
-    const color = getLinkColor(link);
-    line.setAttribute("stroke", color);
+      if (n > 1) {
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const len = Math.sqrt(dx * dx + dy * dy) || 1;
+        const px = -dy / len;
+        const py = dx / len;
+        const spacing = 6; // pixels between parallel lines
+        const offsetIndex = indexInGroup - (n - 1) / 2;
+        const offset = spacing * offsetIndex;
 
-    line.addEventListener("click", (e) => {
-      e.stopPropagation();
-      showLinkDetails(link);
+        x1o += px * offset;
+        y1o += py * offset;
+        x2o += px * offset;
+        y2o += py * offset;
+      }
+
+      const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      line.setAttribute("x1", x1o);
+      line.setAttribute("y1", y1o);
+      line.setAttribute("x2", x2o);
+      line.setAttribute("y2", y2o);
+      line.setAttribute("stroke-width", "2");
+      line.setAttribute("stroke-linecap", "round");
+      line.setAttribute("pointer-events", "stroke");
+
+      const color = getLinkColor(link);
+      line.setAttribute("stroke", color);
+
+      line.addEventListener("click", (e) => {
+        e.stopPropagation();
+        showLinkDetails(link);
+      });
+
+      linksLayer.appendChild(line);
     });
-
-    linksLayer.appendChild(line);
   });
 }
 
