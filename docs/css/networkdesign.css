@@ -277,6 +277,10 @@ header {
   margin-top: 8px;
 }
 
+.no-selection.hidden {
+  display: none;
+}
+
 .small {
   font-size: 11px;
   opacity: 0.7;

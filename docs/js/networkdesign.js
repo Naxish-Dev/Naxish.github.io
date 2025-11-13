@@ -418,6 +418,9 @@ function openDetailsPanel() {
 
 panelCloseBtn.addEventListener("click", () => {
   detailsPanel.classList.add("hidden");
+  selectedDeviceId = null;
+  const noSel = document.getElementById("no-selection");
+  if (noSel) noSel.classList.remove("hidden");
 });
 
 panelSaveBtn.addEventListener("click", () => {
