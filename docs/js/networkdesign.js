@@ -6,6 +6,7 @@ const configFileInput = document.getElementById("config-file-input");
 const importFileInput = document.getElementById("import-file-input");
 const detailsPanel = document.getElementById("details-panel");
 const tooltip = document.getElementById("device-tooltip");
+const linkDetailsBox = document.getElementById("link-details");
 
 const panelDeviceId = document.getElementById("panel-device-id");
 const panelName = document.getElementById("panel-name");
@@ -24,9 +25,14 @@ const exportBtn = document.getElementById("export-topology");
 const importBtn = document.getElementById("import-topology");
 const exportConfigSummaryBtn = document.getElementById("export-config-summary");
 
+// --- Helpers for types ---
+function isEndpointType(type) {
+  return ["Host", "Client", "Server", "IoT"].includes(type);
+}
+
 // --- State ---
 let devices = {};            // id -> { id, type, name, ip, config, x, y, interfaces: [] }
-let links = [];              // { id, fromId, toId }
+let links = [];              // { id, fromId, fromIfName, toId, toIfName }
 let deviceCounter = 1;
 let linkCounter = 1;
 let selectedDeviceId = null;
@@ -40,7 +46,7 @@ let dragOffsetY = 0;
 let linkMode = false;
 let pendingLinkSourceId = null;
 
-// Subnet color mapping (same subnet => same color)
+// Subnet color mapping
 const subnetColorPalette = [
   "#22c55e", "#3b82f6", "#eab308", "#ec4899", "#8b5cf6",
   "#f97316", "#10b981", "#0ea5e9", "#f59e0b", "#f97373"
@@ -91,6 +97,15 @@ importFileInput.addEventListener("change", (e) => {
 
 // --- Cisco-style config summary export ---
 exportConfigSummaryBtn.addEventListener("click", exportConfigSummary);
+
+// --- Type change in panel: re-render interface UI (infra vs endpoints) ---
+panelType.addEventListener("change", () => {
+  if (!selectedDeviceId) return;
+  const dev = devices[selectedDeviceId];
+  if (!dev) return;
+  dev.type = panelType.value;
+  renderInterfacesForDevice(dev);
+});
 
 // --- Add device ---
 function addDevice(type) {
@@ -191,7 +206,11 @@ function showTooltipForDevice(deviceId, event) {
   if (ifs.length > 0) {
     html += `<div class="tooltip-section"><div class="tooltip-line"><strong>Interfaces:</strong></div>`;
     ifs.forEach((iface) => {
-      html += `<div class="tooltip-line">${iface.name || "?"}: ${iface.ip || "?"} / ${iface.mask || "?"}</div>`;
+      const base = iface.name || "?";
+      const kind = iface.kind ? ` [${iface.kind}]` : "";
+      const gw = iface.gateway ? ` gw:${iface.gateway}` : "";
+      const dns = iface.dns ? ` dns:${iface.dns}` : "";
+      html += `<div class="tooltip-line">${base}${kind}: ${iface.ip || "?"} / ${iface.mask || "?"}${gw}${dns}</div>`;
     });
     html += `</div>`;
   }
@@ -209,7 +228,6 @@ function moveTooltip(event) {
   let x = event.clientX - wsRect.left + offsetX;
   let y = event.clientY - wsRect.top + offsetY;
 
-  // Keep tooltip inside workspace bounds
   const maxX = wsRect.width - tooltip.offsetWidth - 4;
   const maxY = wsRect.height - tooltip.offsetHeight - 4;
   x = Math.max(4, Math.min(maxX, x));
@@ -223,38 +241,77 @@ function hideTooltip() {
   tooltip.classList.add("hidden");
 }
 
-// --- Link mode click handler ---
+// --- Link mode click handler (attach to interfaces) ---
 function handleLinkModeClick(deviceId, deviceEl) {
   if (!pendingLinkSourceId) {
-    // First endpoint
     pendingLinkSourceId = deviceId;
     clearLinkSourceHighlight();
     deviceEl.classList.add("link-source");
     return;
   }
 
-  // Second endpoint (avoid self-link)
   if (pendingLinkSourceId && pendingLinkSourceId !== deviceId) {
     const fromId = pendingLinkSourceId;
     const toId = deviceId;
 
-    // Avoid duplicate links
+    const fromDev = devices[fromId];
+    const toDev = devices[toId];
+
+    const fromIfName = chooseInterfaceForLink(fromDev);
+    if (!fromIfName) {
+      pendingLinkSourceId = null;
+      clearLinkSourceHighlight();
+      return;
+    }
+    const toIfName = chooseInterfaceForLink(toDev);
+    if (!toIfName) {
+      pendingLinkSourceId = null;
+      clearLinkSourceHighlight();
+      return;
+    }
+
     const exists = links.some(
       (l) =>
-        (l.fromId === fromId && l.toId === toId) ||
-        (l.fromId === toId && l.toId === fromId)
+        l.fromId === fromId &&
+        l.toId === toId &&
+        l.fromIfName === fromIfName &&
+        l.toIfName === toIfName
     );
 
     if (!exists) {
       const id = `L${linkCounter++}`;
-      links.push({ id, fromId, toId });
+      links.push({ id, fromId, fromIfName, toId, toIfName });
     }
   }
 
-  // Reset selection
   pendingLinkSourceId = null;
   clearLinkSourceHighlight();
   renderLinks();
+}
+
+function chooseInterfaceForLink(dev) {
+  const ifs = dev.interfaces || [];
+  if (ifs.length === 0) {
+    alert(`Device ${dev.name} has no interfaces configured.`);
+    return null;
+  }
+  if (ifs.length === 1) return ifs[0].name;
+
+  const menuLines = ifs.map((iface, idx) => {
+    const label = iface.name || `IF-${idx + 1}`;
+    return `${idx + 1}) ${label} : ${iface.ip || "?"} / ${iface.mask || "?"}`;
+  });
+  const answer = prompt(
+    `Select interface on ${dev.name} (${dev.type}) for this link:\n` +
+    menuLines.join("\n")
+  );
+  if (answer === null) return null;
+  const idx = parseInt(answer, 10) - 1;
+  if (Number.isNaN(idx) || idx < 0 || idx >= ifs.length) {
+    alert("Invalid selection.");
+    return null;
+  }
+  return ifs[idx].name;
 }
 
 function clearLinkSourceHighlight() {
@@ -306,7 +363,6 @@ document.addEventListener("click", (e) => {
   }
 });
 
-// Context menu actions
 contextMenu.addEventListener("click", (e) => {
   const action = e.target.dataset.action;
   if (!action) return;
@@ -357,7 +413,6 @@ panelSaveBtn.addEventListener("click", () => {
   const dev = devices[selectedDeviceId];
   if (!dev) return;
 
-  // Validate management IP
   const ipValue = panelIp.value.trim();
   if (ipValue && !isValidIPv4(ipValue)) {
     setIpValidationError(true);
@@ -366,10 +421,9 @@ panelSaveBtn.addEventListener("click", () => {
   }
   setIpValidationError(false);
 
-  // Collect and validate interfaces from UI
-  const { interfaces, hasError } = collectInterfacesFromUI();
+  const { interfaces, hasError } = collectInterfacesFromUI(panelType.value);
   if (hasError) {
-    alert("One or more interfaces have invalid IP or subnet mask.");
+    alert("One or more interfaces have invalid values.");
     return;
   }
 
@@ -386,80 +440,182 @@ panelSaveBtn.addEventListener("click", () => {
     el.querySelector(".device-ip").textContent = dev.ip || "No IP set";
   }
 
-  // Recalculate link colors (subnets may have changed)
   renderLinks();
 });
 
-// --- Interfaces UI helpers ---
+// --- Interfaces UI ---
 function renderInterfacesForDevice(dev) {
   interfacesList.innerHTML = "";
-  (dev.interfaces || []).forEach((iface) => {
-    addInterfaceRow(iface.name, iface.ip, iface.mask);
-  });
+  const ifs = dev.interfaces || [];
+
+  if (isEndpointType(dev.type)) {
+    ifs.forEach((iface) => {
+      addEndpointInterfaceRow(iface);
+    });
+  } else {
+    ifs.forEach((iface) => {
+      addInfraInterfaceRow(iface);
+    });
+  }
 }
 
-function addInterfaceRow(name = "", ip = "", mask = "") {
+// Infra: name + ip + mask
+function addInfraInterfaceRow(iface = {}) {
   const row = document.createElement("div");
   row.className = "interface-row";
+  row.style.gridTemplateColumns = "1.2fr 1.2fr 1.2fr auto";
+
+  const nameVal = iface.name || "";
+  row.dataset.ifName = nameVal || `IF-${Math.random().toString(36).slice(2, 8)}`;
 
   row.innerHTML = `
-    <input class="if-name" placeholder="Gig0/0" value="${name || ""}">
-    <input class="if-ip" placeholder="192.168.1.1" value="${ip || ""}">
-    <input class="if-mask" placeholder="255.255.255.0" value="${mask || ""}">
+    <input class="if-name" placeholder="Gig0/0" value="${nameVal}">
+    <input class="if-ip" placeholder="192.168.1.1" value="${iface.ip || ""}">
+    <input class="if-mask" placeholder="255.255.255.0" value="${iface.mask || ""}">
     <button type="button" class="if-delete">✕</button>
   `;
 
-  const delBtn = row.querySelector(".if-delete");
-  delBtn.addEventListener("click", () => {
-    row.remove();
-  });
-
+  row.querySelector(".if-delete").addEventListener("click", () => row.remove());
   interfacesList.appendChild(row);
 }
 
+// Endpoint: kind (NIC/WIFI) + ip + mask + gw + dns
+function addEndpointInterfaceRow(iface = {}) {
+  const row = document.createElement("div");
+  row.className = "interface-row";
+  row.style.gridTemplateColumns = "0.9fr 1.2fr 1.2fr 1.2fr 1.2fr auto";
+
+  const nameVal = iface.name || "";
+  row.dataset.ifName = nameVal || `IF-${Math.random().toString(36).slice(2, 8)}`;
+  const kind = iface.kind || "NIC";
+
+  row.innerHTML = `
+    <select class="if-kind">
+      <option value="NIC"${kind === "NIC" ? " selected" : ""}>NIC</option>
+      <option value="WIFI"${kind === "WIFI" ? " selected" : ""}>WIFI</option>
+    </select>
+    <input class="if-ip" placeholder="192.168.1.10" value="${iface.ip || ""}">
+    <input class="if-mask" placeholder="255.255.255.0" value="${iface.mask || ""}">
+    <input class="if-gw" placeholder="192.168.1.1" value="${iface.gateway || ""}">
+    <input class="if-dns" placeholder="8.8.8.8" value="${iface.dns || ""}">
+    <button type="button" class="if-delete">✕</button>
+  `;
+
+  row.querySelector(".if-delete").addEventListener("click", () => row.remove());
+  interfacesList.appendChild(row);
+}
+
+// Add-interface button respects device type
 addInterfaceBtn.addEventListener("click", () => {
-  addInterfaceRow();
+  if (!selectedDeviceId) return;
+  const dev = devices[selectedDeviceId];
+  if (!dev) return;
+
+  if (isEndpointType(dev.type)) {
+    addEndpointInterfaceRow();
+  } else {
+    addInfraInterfaceRow();
+  }
 });
 
-function collectInterfacesFromUI() {
+// Collect interfaces from UI
+function collectInterfacesFromUI(devType) {
   const rows = interfacesList.querySelectorAll(".interface-row");
   const interfaces = [];
   let hasError = false;
 
-  rows.forEach((row) => {
-    const nameInput = row.querySelector(".if-name");
-    const ipInput = row.querySelector(".if-ip");
-    const maskInput = row.querySelector(".if-mask");
+  if (isEndpointType(devType)) {
+    rows.forEach((row) => {
+      const kindSel = row.querySelector(".if-kind");
+      const ipInput = row.querySelector(".if-ip");
+      const maskInput = row.querySelector(".if-mask");
+      const gwInput = row.querySelector(".if-gw");
+      const dnsInput = row.querySelector(".if-dns");
 
-    const name = nameInput.value.trim();
-    const ip = ipInput.value.trim();
-    const mask = maskInput.value.trim();
+      const kind = kindSel.value;
+      const ip = ipInput.value.trim();
+      const mask = maskInput.value.trim();
+      const gw = gwInput.value.trim();
+      const dns = dnsInput.value.trim();
 
-    // Reset error state
-    ipInput.classList.remove("error");
-    maskInput.classList.remove("error");
+      ipInput.classList.remove("error");
+      maskInput.classList.remove("error");
+      gwInput.classList.remove("error");
+      dnsInput.classList.remove("error");
 
-    // Skip completely empty rows
-    if (!name && !ip && !mask) return;
+      if (!ip && !mask && !gw && !dns) return;
 
-    let rowHasError = false;
+      let rowErr = false;
+      if (!ip || !isValidIPv4(ip)) {
+        ipInput.classList.add("error");
+        rowErr = true;
+      }
+      if (!mask || !isValidIPv4Mask(mask)) {
+        maskInput.classList.add("error");
+        rowErr = true;
+      }
+      if (gw && !isValidIPv4(gw)) {
+        gwInput.classList.add("error");
+        rowErr = true;
+      }
+      if (dns && !isValidIPv4(dns)) {
+        dnsInput.classList.add("error");
+        rowErr = true;
+      }
 
-    if (!ip || !isValidIPv4(ip)) {
-      ipInput.classList.add("error");
-      rowHasError = true;
-    }
-    if (!mask || !isValidIPv4Mask(mask)) {
-      maskInput.classList.add("error");
-      rowHasError = true;
-    }
+      if (rowErr) {
+        hasError = true;
+        return;
+      }
 
-    if (rowHasError) {
-      hasError = true;
-      return;
-    }
+      const existingName = row.dataset.ifName;
+      const name = existingName || `IF-${Math.random().toString(36).slice(2, 8)}`;
+      row.dataset.ifName = name;
 
-    interfaces.push({ name, ip, mask });
-  });
+      interfaces.push({ name, kind, ip, mask, gateway: gw, dns });
+    });
+  } else {
+    rows.forEach((row) => {
+      const nameInput = row.querySelector(".if-name");
+      const ipInput = row.querySelector(".if-ip");
+      const maskInput = row.querySelector(".if-mask");
+
+      const name = nameInput.value.trim();
+      const ip = ipInput.value.trim();
+      const mask = maskInput.value.trim();
+
+      nameInput.classList.remove("error");
+      ipInput.classList.remove("error");
+      maskInput.classList.remove("error");
+
+      if (!name && !ip && !mask) return;
+
+      let rowErr = false;
+      if (!name) {
+        nameInput.classList.add("error");
+        rowErr = true;
+      }
+      if (!ip || !isValidIPv4(ip)) {
+        ipInput.classList.add("error");
+        rowErr = true;
+      }
+      if (!mask || !isValidIPv4Mask(mask)) {
+        maskInput.classList.add("error");
+        rowErr = true;
+      }
+
+      if (rowErr) {
+        hasError = true;
+        return;
+      }
+
+      const existingName = row.dataset.ifName;
+      const finalName = existingName || name || `IF-${Math.random().toString(36).slice(2, 8)}`;
+      row.dataset.ifName = finalName;
+
+      interfaces.push({ name: finalName, ip, mask });
+    });
+  }
 
   return { interfaces, hasError };
 }
@@ -483,11 +639,10 @@ function isValidIPv4Mask(mask) {
   for (const o of octets) {
     bits += o.toString(2).padStart(8, "0");
   }
-  // Must be some number of 1s followed by only 0s
   const firstZero = bits.indexOf("0");
   const lastOne = bits.lastIndexOf("1");
-  if (firstZero === -1) return true; // /32 mask (all ones)
-  return lastOne < firstZero;        // no "01" pattern after first zero
+  if (firstZero === -1) return true;
+  return lastOne < firstZero;
 }
 
 function setIpValidationError(hasError) {
@@ -540,12 +695,11 @@ function deleteDevice(deviceId) {
   if (el) el.remove();
   delete devices[deviceId];
 
-  // Remove any links that touched this device
   links = links.filter((l) => l.fromId !== deviceId && l.toId !== deviceId);
   renderLinks();
 }
 
-// --- Helpers for subnet & colors ---
+// --- Subnet helpers & colors ---
 function ipToInt(ip) {
   return ip.split(".").reduce((acc, oct) => (acc << 8) + Number(oct), 0) >>> 0;
 }
@@ -556,7 +710,7 @@ function maskToPrefix(mask) {
   for (const o of octets) {
     bits += o.toString(2).padStart(8, "0");
   }
-  return bits.split("1").length - 1; // count '1's
+  return bits.split("1").length - 1;
 }
 
 function getNetworkKey(ip, mask) {
@@ -573,7 +727,7 @@ function getNetworkKey(ip, mask) {
 }
 
 function getColorForSubnet(networkKey) {
-  if (!networkKey) return "#64748b"; // default grey
+  if (!networkKey) return "#64748b";
   if (!subnetColorMap[networkKey]) {
     const color = subnetColorPalette[nextSubnetColorIndex % subnetColorPalette.length];
     subnetColorMap[networkKey] = color;
@@ -582,46 +736,106 @@ function getColorForSubnet(networkKey) {
   return subnetColorMap[networkKey];
 }
 
-// Determine link color based on shared subnet between devices
 function getLinkColor(link) {
   const from = devices[link.fromId];
   const to = devices[link.toId];
   if (!from || !to) return "#64748b";
 
+  const fromIf = (from.interfaces || []).find((i) => i.name === link.fromIfName);
+  const toIf = (to.interfaces || []).find((i) => i.name === link.toIfName);
+
+  if (fromIf && toIf) {
+    const key1 = getNetworkKey(fromIf.ip, fromIf.mask);
+    const key2 = getNetworkKey(toIf.ip, toIf.mask);
+    if (key1 && key2 && key1 === key2) {
+      return getColorForSubnet(key1);
+    }
+  }
+
+  // Fallback: any shared subnet between devices
   const fromIfs = from.interfaces || [];
   const toIfs = to.interfaces || [];
-
   let sharedNet = null;
 
   for (const fi of fromIfs) {
-    const key1 = getNetworkKey(fi.ip, fi.mask);
-    if (!key1) continue;
-
+    const k1 = getNetworkKey(fi.ip, fi.mask);
+    if (!k1) continue;
     for (const ti of toIfs) {
-      const key2 = getNetworkKey(ti.ip, ti.mask);
-      if (!key2) continue;
-      if (key1 === key2) {
-        sharedNet = key1;
+      const k2 = getNetworkKey(ti.ip, ti.mask);
+      if (!k2) continue;
+      if (k1 === k2) {
+        sharedNet = k1;
         break;
       }
     }
-
     if (sharedNet) break;
-  }
-
-  // If no interface subnets match, try management IP + first interface mask as a fallback (optional)
-  if (!sharedNet && from.ip && to.ip && fromIfs.length > 0) {
-    const mask = fromIfs[0].mask;
-    const key1 = getNetworkKey(from.ip, mask);
-    const key2 = getNetworkKey(to.ip, mask);
-    if (key1 && key2 && key1 === key2) {
-      sharedNet = key1;
-    }
   }
 
   if (!sharedNet) return "#64748b";
   return getColorForSubnet(sharedNet);
 }
+
+// --- Link details panel ---
+function showLinkDetails(link) {
+  const from = devices[link.fromId];
+  const to = devices[link.toId];
+  if (!from || !to) return;
+
+  const fromIf = (from.interfaces || []).find((i) => i.name === link.fromIfName);
+  const toIf = (to.interfaces || []).find((i) => i.name === link.toIfName);
+
+  const fromLabel = fromIf
+    ? `${from.name} (${fromIf.name || "IF"})`
+    : `${from.name}`;
+  const toLabel = toIf
+    ? `${to.name} (${toIf.name || "IF"})`
+    : `${to.name}`;
+
+  let netKey = null;
+  if (fromIf && toIf) {
+    const k1 = getNetworkKey(fromIf.ip, fromIf.mask);
+    const k2 = getNetworkKey(toIf.ip, toIf.mask);
+    if (k1 && k2 && k1 === k2) netKey = k1;
+  }
+
+  const color = getLinkColor(link);
+
+  let html = `<h4>Link ${link.id}</h4>`;
+  html += `<div class="detail-line"><strong>Endpoints:</strong> ${fromLabel}  ⇄  ${toLabel}</div>`;
+
+  if (fromIf) {
+    html += `<div class="detail-line">${from.name} ${fromIf.name || ""}: ${fromIf.ip || "?"} / ${fromIf.mask || "?"}</div>`;
+  }
+  if (toIf) {
+    html += `<div class="detail-line">${to.name} ${toIf.name || ""}: ${toIf.ip || "?"} / ${toIf.mask || "?"}</div>`;
+  }
+
+  if (netKey) {
+    html += `<div class="detail-line"><strong>Subnet:</strong> ${netKey}</div>`;
+  } else {
+    html += `<div class="detail-line"><strong>Subnet:</strong> none / not matching</div>`;
+  }
+
+  html += `<div class="detail-line"><strong>Color:</strong> <span style="color:${color};">■■■</span> ${color}</div>`;
+  html += `<div class="detail-line" style="margin-top:4px;opacity:0.7;">Click in empty workspace or press Esc to hide.</div>`;
+
+  linkDetailsBox.innerHTML = html;
+  linkDetailsBox.classList.remove("hidden");
+}
+
+function hideLinkDetails() {
+  linkDetailsBox.classList.add("hidden");
+}
+
+workspace.addEventListener("click", (e) => {
+  // Don't hide if we clicked on a device (drag/select)
+  if (e.target.closest(".device")) return;
+  hideLinkDetails();
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") hideLinkDetails();
+});
 
 // --- Render links (SVG lines) ---
 function renderLinks() {
@@ -654,15 +868,21 @@ function renderLinks() {
     line.setAttribute("y2", y2);
     line.setAttribute("stroke-width", "2");
     line.setAttribute("stroke-linecap", "round");
+    line.setAttribute("pointer-events", "stroke");
 
     const color = getLinkColor(link);
     line.setAttribute("stroke", color);
+
+    line.addEventListener("click", (e) => {
+      e.stopPropagation();
+      showLinkDetails(link);
+    });
 
     linksLayer.appendChild(line);
   });
 }
 
-// Re-render links on window resize (so lines still line up)
+// Re-render links on window resize
 window.addEventListener("resize", () => {
   renderLinks();
 });
@@ -693,18 +913,15 @@ function loadTopologyFromObject(data) {
   deviceCounter = 1;
   linkCounter = 1;
 
-  // Reset subnet colors
   subnetColorMap = {};
   nextSubnetColorIndex = 0;
 
-  // Remove existing device elements
   document
     .querySelectorAll(".device")
     .forEach((el) => el.remove());
 
   if (Array.isArray(data.devices)) {
     data.devices.forEach((dev) => {
-      // Ensure interfaces array exists
       dev.interfaces = Array.isArray(dev.interfaces) ? dev.interfaces : [];
       devices[dev.id] = dev;
       const el = createDeviceElement(dev);
@@ -752,11 +969,20 @@ function exportConfigSummary() {
     }
 
     (dev.interfaces || []).forEach((iface) => {
-      lines.push(`interface ${iface.name || "Gig0/0"}`);
+      const ifName = iface.name || "Gig0/0";
+      lines.push(`interface ${ifName}`);
       if (iface.ip && iface.mask) {
         lines.push(` ip address ${iface.ip} ${iface.mask}`);
       } else {
         lines.push(` ip address X.X.X.X 255.255.255.0`);
+      }
+      if (iface.gateway || iface.dns) {
+        if (iface.gateway) {
+          lines.push(` ! default-gateway ${iface.gateway}`);
+        }
+        if (iface.dns) {
+          lines.push(` ! dns-server ${iface.dns}`);
+        }
       }
       lines.push(` no shutdown`);
       lines.push(`!`);

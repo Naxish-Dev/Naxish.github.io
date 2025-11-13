@@ -16,6 +16,7 @@
     <button data-device-type="Host">Add Host</button>
     <button data-device-type="Client">Add Client</button>
     <button data-device-type="Server">Add Server</button>
+    <button data-device-type="IoT">Add IoT</button>
     <button data-device-type="ISP">Add ISP</button>
 
     <!-- Link mode -->
@@ -38,8 +39,11 @@
         Left-click to drag · Toggle "Link mode" to connect devices · Right-click a device for options
       </div>
 
-      <!-- Hover tooltip -->
+      <!-- Hover tooltip for devices -->
       <div id="device-tooltip" class="tooltip hidden"></div>
+
+      <!-- Link details on click -->
+      <div id="link-details" class="link-details hidden"></div>
     </div>
 
     <!-- Details / config panel -->
@@ -63,6 +67,7 @@
           <option>Host</option>
           <option>Client</option>
           <option>Server</option>
+          <option>IoT</option>
           <option>ISP</option>
           <option>Firewall</option>
           <option>Other</option>
@@ -76,11 +81,12 @@
       </div>
 
       <div class="field">
-        <label>Interfaces (IP + subnet mask)</label>
+        <label>Interfaces</label>
         <div id="interfaces-list"></div>
         <button type="button" class="small-btn" id="add-interface">+ Add interface</button>
-        <div class="small">
-          Example: Gig0/0 &nbsp;·&nbsp; 192.168.1.1 &nbsp;·&nbsp; 255.255.255.0
+        <div class="small" id="interfaces-help">
+          Routers/Switches/etc: name + IP + subnet.<br>
+          Hosts/Clients/Servers/IoT: NIC/WIFI + IP + subnet + gateway + DNS.
         </div>
       </div>
 
