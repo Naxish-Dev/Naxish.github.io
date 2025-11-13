@@ -336,6 +336,40 @@ input.error {
   background: #1f2937;
 }
 
+/* Tooltip for hover info */
+.tooltip {
+  position: absolute;
+  max-width: 260px;
+  background: rgba(15, 23, 42, 0.98);
+  border-radius: 10px;
+  border: 1px solid #1f2937;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.75);
+  padding: 8px 10px;
+  font-size: 11px;
+  pointer-events: none;
+  z-index: 999;
+}
+
+.tooltip.hidden {
+  display: none;
+}
+
+.tooltip h4 {
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.tooltip .tooltip-line {
+  font-size: 11px;
+  opacity: 0.85;
+}
+
+.tooltip .tooltip-section {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid #1f2937;
+}
+
 /* Hidden file inputs */
 #config-file-input,
 #import-file-input {

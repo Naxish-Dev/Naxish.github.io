@@ -5,6 +5,7 @@ const contextMenu = document.getElementById("context-menu");
 const configFileInput = document.getElementById("config-file-input");
 const importFileInput = document.getElementById("import-file-input");
 const detailsPanel = document.getElementById("details-panel");
+const tooltip = document.getElementById("device-tooltip");
 
 const panelDeviceId = document.getElementById("panel-device-id");
 const panelName = document.getElementById("panel-name");
@@ -21,6 +22,7 @@ const addInterfaceBtn = document.getElementById("add-interface");
 const linkModeBtn = document.getElementById("toggle-link-mode");
 const exportBtn = document.getElementById("export-topology");
 const importBtn = document.getElementById("import-topology");
+const exportConfigSummaryBtn = document.getElementById("export-config-summary");
 
 // --- State ---
 let devices = {};            // id -> { id, type, name, ip, config, x, y, interfaces: [] }
@@ -37,6 +39,14 @@ let dragOffsetY = 0;
 // Link mode state
 let linkMode = false;
 let pendingLinkSourceId = null;
+
+// Subnet color mapping (same subnet => same color)
+const subnetColorPalette = [
+  "#22c55e", "#3b82f6", "#eab308", "#ec4899", "#8b5cf6",
+  "#f97316", "#10b981", "#0ea5e9", "#f59e0b", "#f97373"
+];
+let subnetColorMap = {}; // key: "network/prefix" -> color
+let nextSubnetColorIndex = 0;
 
 // --- Toolbar: add devices ---
 document.querySelectorAll('.toolbar button[data-device-type]').forEach(btn => {
@@ -78,6 +88,9 @@ importFileInput.addEventListener("change", (e) => {
   };
   reader.readAsText(file);
 });
+
+// --- Cisco-style config summary export ---
+exportConfigSummaryBtn.addEventListener("click", exportConfigSummary);
 
 // --- Add device ---
 function addDevice(type) {
@@ -150,7 +163,64 @@ function createDeviceElement(device) {
     openDetailsPanel();
   });
 
+  // Hover tooltip: show interfaces and mgmt IP
+  el.addEventListener("mouseenter", (e) => {
+    showTooltipForDevice(device.id, e);
+  });
+
+  el.addEventListener("mousemove", (e) => {
+    moveTooltip(e);
+  });
+
+  el.addEventListener("mouseleave", () => {
+    hideTooltip();
+  });
+
   return el;
+}
+
+// --- Hover tooltip helpers ---
+function showTooltipForDevice(deviceId, event) {
+  const dev = devices[deviceId];
+  if (!dev) return;
+
+  let html = `<h4>${dev.name} <span style="opacity:0.7;">(${dev.type})</span></h4>`;
+  html += `<div class="tooltip-line">Mgmt IP: ${dev.ip || "N/A"}</div>`;
+
+  const ifs = dev.interfaces || [];
+  if (ifs.length > 0) {
+    html += `<div class="tooltip-section"><div class="tooltip-line"><strong>Interfaces:</strong></div>`;
+    ifs.forEach((iface) => {
+      html += `<div class="tooltip-line">${iface.name || "?"}: ${iface.ip || "?"} / ${iface.mask || "?"}</div>`;
+    });
+    html += `</div>`;
+  }
+
+  tooltip.innerHTML = html;
+  tooltip.classList.remove("hidden");
+  moveTooltip(event);
+}
+
+function moveTooltip(event) {
+  if (tooltip.classList.contains("hidden")) return;
+  const wsRect = workspace.getBoundingClientRect();
+  const offsetX = 12;
+  const offsetY = 10;
+  let x = event.clientX - wsRect.left + offsetX;
+  let y = event.clientY - wsRect.top + offsetY;
+
+  // Keep tooltip inside workspace bounds
+  const maxX = wsRect.width - tooltip.offsetWidth - 4;
+  const maxY = wsRect.height - tooltip.offsetHeight - 4;
+  x = Math.max(4, Math.min(maxX, x));
+  y = Math.max(4, Math.min(maxY, y));
+
+  tooltip.style.left = `${x}px`;
+  tooltip.style.top = `${y}px`;
+}
+
+function hideTooltip() {
+  tooltip.classList.add("hidden");
 }
 
 // --- Link mode click handler ---
@@ -315,6 +385,9 @@ panelSaveBtn.addEventListener("click", () => {
     el.querySelector(".device-name").textContent = dev.name;
     el.querySelector(".device-ip").textContent = dev.ip || "No IP set";
   }
+
+  // Recalculate link colors (subnets may have changed)
+  renderLinks();
 });
 
 // --- Interfaces UI helpers ---
@@ -472,6 +545,84 @@ function deleteDevice(deviceId) {
   renderLinks();
 }
 
+// --- Helpers for subnet & colors ---
+function ipToInt(ip) {
+  return ip.split(".").reduce((acc, oct) => (acc << 8) + Number(oct), 0) >>> 0;
+}
+
+function maskToPrefix(mask) {
+  const octets = mask.split(".").map(Number);
+  let bits = "";
+  for (const o of octets) {
+    bits += o.toString(2).padStart(8, "0");
+  }
+  return bits.split("1").length - 1; // count '1's
+}
+
+function getNetworkKey(ip, mask) {
+  if (!ip || !mask || !isValidIPv4(ip) || !isValidIPv4Mask(mask)) return null;
+  const ipInt = ipToInt(ip);
+  const maskInt = ipToInt(mask);
+  const netInt = ipInt & maskInt;
+  const prefix = maskToPrefix(mask);
+  const a = (netInt >>> 24) & 0xff;
+  const b = (netInt >>> 16) & 0xff;
+  const c = (netInt >>> 8) & 0xff;
+  const d = netInt & 0xff;
+  return `${a}.${b}.${c}.${d}/${prefix}`;
+}
+
+function getColorForSubnet(networkKey) {
+  if (!networkKey) return "#64748b"; // default grey
+  if (!subnetColorMap[networkKey]) {
+    const color = subnetColorPalette[nextSubnetColorIndex % subnetColorPalette.length];
+    subnetColorMap[networkKey] = color;
+    nextSubnetColorIndex++;
+  }
+  return subnetColorMap[networkKey];
+}
+
+// Determine link color based on shared subnet between devices
+function getLinkColor(link) {
+  const from = devices[link.fromId];
+  const to = devices[link.toId];
+  if (!from || !to) return "#64748b";
+
+  const fromIfs = from.interfaces || [];
+  const toIfs = to.interfaces || [];
+
+  let sharedNet = null;
+
+  for (const fi of fromIfs) {
+    const key1 = getNetworkKey(fi.ip, fi.mask);
+    if (!key1) continue;
+
+    for (const ti of toIfs) {
+      const key2 = getNetworkKey(ti.ip, ti.mask);
+      if (!key2) continue;
+      if (key1 === key2) {
+        sharedNet = key1;
+        break;
+      }
+    }
+
+    if (sharedNet) break;
+  }
+
+  // If no interface subnets match, try management IP + first interface mask as a fallback (optional)
+  if (!sharedNet && from.ip && to.ip && fromIfs.length > 0) {
+    const mask = fromIfs[0].mask;
+    const key1 = getNetworkKey(from.ip, mask);
+    const key2 = getNetworkKey(to.ip, mask);
+    if (key1 && key2 && key1 === key2) {
+      sharedNet = key1;
+    }
+  }
+
+  if (!sharedNet) return "#64748b";
+  return getColorForSubnet(sharedNet);
+}
+
 // --- Render links (SVG lines) ---
 function renderLinks() {
   const wsRect = workspace.getBoundingClientRect();
@@ -501,9 +652,12 @@ function renderLinks() {
     line.setAttribute("y1", y1);
     line.setAttribute("x2", x2);
     line.setAttribute("y2", y2);
-    line.setAttribute("stroke", "#64748b");
     line.setAttribute("stroke-width", "2");
     line.setAttribute("stroke-linecap", "round");
+
+    const color = getLinkColor(link);
+    line.setAttribute("stroke", color);
+
     linksLayer.appendChild(line);
   });
 }
@@ -539,6 +693,10 @@ function loadTopologyFromObject(data) {
   deviceCounter = 1;
   linkCounter = 1;
 
+  // Reset subnet colors
+  subnetColorMap = {};
+  nextSubnetColorIndex = 0;
+
   // Remove existing device elements
   document
     .querySelectorAll(".device")
@@ -572,6 +730,64 @@ function loadTopologyFromObject(data) {
   }
 
   renderLinks();
+}
+
+// --- Cisco-style config summary ---
+function exportConfigSummary() {
+  const devs = Object.values(devices).sort((a, b) => a.id.localeCompare(b.id));
+
+  let lines = [];
+  devs.forEach((dev, idx) => {
+    lines.push(`! ===============================`);
+    lines.push(`! Device: ${dev.name} (${dev.id})`);
+    lines.push(`! Type  : ${dev.type}`);
+    lines.push(`! ===============================`);
+    lines.push(`hostname ${dev.name}`);
+    lines.push(`!`);
+
+    if (dev.ip) {
+      lines.push(`! Management IP`);
+      lines.push(`! ip address ${dev.ip}`);
+      lines.push(`!`);
+    }
+
+    (dev.interfaces || []).forEach((iface) => {
+      lines.push(`interface ${iface.name || "Gig0/0"}`);
+      if (iface.ip && iface.mask) {
+        lines.push(` ip address ${iface.ip} ${iface.mask}`);
+      } else {
+        lines.push(` ip address X.X.X.X 255.255.255.0`);
+      }
+      lines.push(` no shutdown`);
+      lines.push(`!`);
+    });
+
+    if (dev.config && dev.config.trim()) {
+      lines.push(`! Original pasted config`);
+      lines.push(...dev.config.split(/\r?\n/).map((l) => `! ${l}`));
+    }
+
+    if (idx < devs.length - 1) {
+      lines.push(`!`);
+      lines.push(`! ------------------------------------`);
+      lines.push(`!`);
+    }
+  });
+
+  if (lines.length === 0) {
+    lines.push("! No devices in topology.");
+  }
+
+  const blob = new Blob([lines.join("\n")], { type: "text/plain" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "topology-config-summary.txt";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }
 
 // --- Optional: start with an example device ---

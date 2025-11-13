@@ -22,8 +22,11 @@
     <button id="toggle-link-mode">Link mode: OFF</button>
 
     <!-- Export / Import -->
-    <button id="export-topology">Export</button>
-    <button id="import-topology">Import</button>
+    <button id="export-topology">Export topology</button>
+    <button id="import-topology">Import topology</button>
+
+    <!-- Cisco-style config summary -->
+    <button id="export-config-summary">Export config summary</button>
   </div>
 
   <div class="main">
@@ -34,6 +37,9 @@
       <div class="hint">
         Left-click to drag · Toggle "Link mode" to connect devices · Right-click a device for options
       </div>
+
+      <!-- Hover tooltip -->
+      <div id="device-tooltip" class="tooltip hidden"></div>
     </div>
 
     <!-- Details / config panel -->
