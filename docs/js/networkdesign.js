@@ -15,14 +15,15 @@ const panelCloseBtn = document.getElementById("panel-close");
 const panelSaveBtn = document.getElementById("panel-save");
 const ipError = document.getElementById("ip-error");
 
+const interfacesList = document.getElementById("interfaces-list");
+const addInterfaceBtn = document.getElementById("add-interface");
+
 const linkModeBtn = document.getElementById("toggle-link-mode");
 const exportBtn = document.getElementById("export-topology");
 const importBtn = document.getElementById("import-topology");
-const saveBackendBtn = document.getElementById("save-backend");
-const loadBackendBtn = document.getElementById("load-backend");
 
 // --- State ---
-let devices = {};            // id -> { id, type, name, ip, config, x, y }
+let devices = {};            // id -> { id, type, name, ip, config, x, y, interfaces: [] }
 let links = [];              // { id, fromId, toId }
 let deviceCounter = 1;
 let linkCounter = 1;
@@ -78,28 +79,6 @@ importFileInput.addEventListener("change", (e) => {
   reader.readAsText(file);
 });
 
-// --- Backend buttons (requires backend implementation) ---
-saveBackendBtn.addEventListener("click", async () => {
-  try {
-    await saveTopologyToBackend();
-    alert("Topology saved to backend (if API exists).");
-  } catch (err) {
-    console.error(err);
-    alert("Failed to save to backend. Check console / backend.");
-  }
-});
-
-loadBackendBtn.addEventListener("click", async () => {
-  try {
-    const data = await loadTopologyFromBackend();
-    loadTopologyFromObject(data);
-    alert("Topology loaded from backend (if API exists).");
-  } catch (err) {
-    console.error(err);
-    alert("Failed to load from backend. Check console / backend.");
-  }
-});
-
 // --- Add device ---
 function addDevice(type) {
   const id = `D${deviceCounter++}`;
@@ -115,7 +94,8 @@ function addDevice(type) {
     ip: "",
     config: "",
     x,
-    y
+    y,
+    interfaces: []
   };
 
   devices[id] = deviceData;
@@ -295,6 +275,7 @@ function openDetailsPanel() {
 
   document.getElementById("no-selection")?.classList.add("hidden");
   clearIpValidation();
+  renderInterfacesForDevice(dev);
 }
 
 panelCloseBtn.addEventListener("click", () => {
@@ -306,20 +287,27 @@ panelSaveBtn.addEventListener("click", () => {
   const dev = devices[selectedDeviceId];
   if (!dev) return;
 
+  // Validate management IP
   const ipValue = panelIp.value.trim();
-
-  if (!validateIpOrSubnet(ipValue)) {
+  if (ipValue && !isValidIPv4(ipValue)) {
     setIpValidationError(true);
-    alert("Invalid IP address or subnet. Use IPv4 or IPv4/prefix (0-32).");
+    alert("Invalid management IP. Use a valid IPv4 address.");
     return;
   }
-
   setIpValidationError(false);
+
+  // Collect and validate interfaces from UI
+  const { interfaces, hasError } = collectInterfacesFromUI();
+  if (hasError) {
+    alert("One or more interfaces have invalid IP or subnet mask.");
+    return;
+  }
 
   dev.name = panelName.value || dev.name;
   dev.type = panelType.value || dev.type;
   dev.ip = ipValue;
   dev.config = panelConfig.value || "";
+  dev.interfaces = interfaces;
 
   const el = workspace.querySelector(`.device[data-id="${dev.id}"]`);
   if (el) {
@@ -329,21 +317,81 @@ panelSaveBtn.addEventListener("click", () => {
   }
 });
 
-// --- IP validation helpers ---
-function validateIpOrSubnet(value) {
-  if (!value) return true; // allow empty
-  const parts = value.split("/");
-  const ip = parts[0];
-
-  if (!isValidIPv4(ip)) return false;
-  if (parts.length === 1) return true;
-
-  const prefix = Number(parts[1]);
-  if (!Number.isInteger(prefix) || prefix < 0 || prefix > 32) return false;
-
-  return true;
+// --- Interfaces UI helpers ---
+function renderInterfacesForDevice(dev) {
+  interfacesList.innerHTML = "";
+  (dev.interfaces || []).forEach((iface) => {
+    addInterfaceRow(iface.name, iface.ip, iface.mask);
+  });
 }
 
+function addInterfaceRow(name = "", ip = "", mask = "") {
+  const row = document.createElement("div");
+  row.className = "interface-row";
+
+  row.innerHTML = `
+    <input class="if-name" placeholder="Gig0/0" value="${name || ""}">
+    <input class="if-ip" placeholder="192.168.1.1" value="${ip || ""}">
+    <input class="if-mask" placeholder="255.255.255.0" value="${mask || ""}">
+    <button type="button" class="if-delete">✕</button>
+  `;
+
+  const delBtn = row.querySelector(".if-delete");
+  delBtn.addEventListener("click", () => {
+    row.remove();
+  });
+
+  interfacesList.appendChild(row);
+}
+
+addInterfaceBtn.addEventListener("click", () => {
+  addInterfaceRow();
+});
+
+function collectInterfacesFromUI() {
+  const rows = interfacesList.querySelectorAll(".interface-row");
+  const interfaces = [];
+  let hasError = false;
+
+  rows.forEach((row) => {
+    const nameInput = row.querySelector(".if-name");
+    const ipInput = row.querySelector(".if-ip");
+    const maskInput = row.querySelector(".if-mask");
+
+    const name = nameInput.value.trim();
+    const ip = ipInput.value.trim();
+    const mask = maskInput.value.trim();
+
+    // Reset error state
+    ipInput.classList.remove("error");
+    maskInput.classList.remove("error");
+
+    // Skip completely empty rows
+    if (!name && !ip && !mask) return;
+
+    let rowHasError = false;
+
+    if (!ip || !isValidIPv4(ip)) {
+      ipInput.classList.add("error");
+      rowHasError = true;
+    }
+    if (!mask || !isValidIPv4Mask(mask)) {
+      maskInput.classList.add("error");
+      rowHasError = true;
+    }
+
+    if (rowHasError) {
+      hasError = true;
+      return;
+    }
+
+    interfaces.push({ name, ip, mask });
+  });
+
+  return { interfaces, hasError };
+}
+
+// --- IP validation helpers ---
 function isValidIPv4(ip) {
   const octets = ip.split(".");
   if (octets.length !== 4) return false;
@@ -352,6 +400,21 @@ function isValidIPv4(ip) {
     const num = Number(oct);
     return num >= 0 && num <= 255;
   });
+}
+
+function isValidIPv4Mask(mask) {
+  if (!isValidIPv4(mask)) return false;
+  const octets = mask.split(".").map(Number);
+
+  let bits = "";
+  for (const o of octets) {
+    bits += o.toString(2).padStart(8, "0");
+  }
+  // Must be some number of 1s followed by only 0s
+  const firstZero = bits.indexOf("0");
+  const lastOne = bits.lastIndexOf("1");
+  if (firstZero === -1) return true; // /32 mask (all ones)
+  return lastOne < firstZero;        // no "01" pattern after first zero
 }
 
 function setIpValidationError(hasError) {
@@ -450,7 +513,7 @@ window.addEventListener("resize", () => {
   renderLinks();
 });
 
-// --- Export / Import (frontend) ---
+// --- Export / Import (frontend only) ---
 function exportTopology() {
   const data = {
     devices: Object.values(devices),
@@ -483,11 +546,12 @@ function loadTopologyFromObject(data) {
 
   if (Array.isArray(data.devices)) {
     data.devices.forEach((dev) => {
+      // Ensure interfaces array exists
+      dev.interfaces = Array.isArray(dev.interfaces) ? dev.interfaces : [];
       devices[dev.id] = dev;
       const el = createDeviceElement(dev);
       workspace.appendChild(el);
 
-      // Track highest numeric suffix in id, if it looks like D###
       const match = /^D(\d+)$/.exec(dev.id);
       if (match) {
         const num = Number(match[1]);
@@ -508,32 +572,6 @@ function loadTopologyFromObject(data) {
   }
 
   renderLinks();
-}
-
-// --- Backend integration (example endpoints) ---
-async function saveTopologyToBackend() {
-  const data = {
-    devices: Object.values(devices),
-    links
-  };
-
-  const res = await fetch("/api/topology", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data)
-  });
-
-  if (!res.ok) {
-    throw new Error("Failed to save topology to backend");
-  }
-}
-
-async function loadTopologyFromBackend() {
-  const res = await fetch("/api/topology");
-  if (!res.ok) {
-    throw new Error("Failed to load topology from backend");
-  }
-  return await res.json();
 }
 
 // --- Optional: start with an example device ---

@@ -24,10 +24,6 @@
     <!-- Export / Import -->
     <button id="export-topology">Export</button>
     <button id="import-topology">Import</button>
-
-    <!-- Backend integration -->
-    <button id="save-backend">Save to backend</button>
-    <button id="load-backend">Load from backend</button>
   </div>
 
   <div class="main">
@@ -35,7 +31,9 @@
     <div id="workspace">
       <!-- SVG layer for links -->
       <svg id="links-layer"></svg>
-      <div class="hint">Left-click to drag · Toggle "Link mode" to connect devices · Right-click device for options</div>
+      <div class="hint">
+        Left-click to drag · Toggle "Link mode" to connect devices · Right-click a device for options
+      </div>
     </div>
 
     <!-- Details / config panel -->
@@ -66,15 +64,26 @@
       </div>
 
       <div class="field">
-        <label for="panel-ip">Management IP / Subnet</label>
-        <input id="panel-ip" type="text" placeholder="10.0.0.1 or 10.0.0.1/24" />
-        <div class="small" id="ip-error" style="display:none;">Invalid IPv4 or prefix (0–32)</div>
+        <label for="panel-ip">Management IP (optional)</label>
+        <input id="panel-ip" type="text" placeholder="10.0.0.1" />
+        <div class="small" id="ip-error" style="display:none;">Invalid IPv4 address.</div>
+      </div>
+
+      <div class="field">
+        <label>Interfaces (IP + subnet mask)</label>
+        <div id="interfaces-list"></div>
+        <button type="button" class="small-btn" id="add-interface">+ Add interface</button>
+        <div class="small">
+          Example: Gig0/0 &nbsp;·&nbsp; 192.168.1.1 &nbsp;·&nbsp; 255.255.255.0
+        </div>
       </div>
 
       <div class="field">
         <label for="panel-config">Config (paste or upload)</label>
         <textarea id="panel-config" placeholder="# Running-config or similar"></textarea>
-        <div class="small">Tip: Right-click device → "Upload config file" to import from a file.</div>
+        <div class="small">
+          Tip: Right-click device → "Upload config file" to import from a file.
+        </div>
       </div>
 
       <div class="panel-buttons">

@@ -287,6 +287,55 @@ input.error {
   box-shadow: 0 0 0 1px #dc2626;
 }
 
+/* Interfaces UI */
+#interfaces-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.interface-row {
+  display: grid;
+  grid-template-columns: 1.2fr 1.2fr 1.2fr auto;
+  gap: 4px;
+  align-items: center;
+}
+
+.interface-row input {
+  font-size: 12px;
+}
+
+.interface-row button.if-delete {
+  border-radius: 999px;
+  border: 1px solid #1f2937;
+  background: #111827;
+  color: #e5e7eb;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 3px 7px;
+}
+
+.interface-row button.if-delete:hover {
+  background: #1f2937;
+}
+
+.small-btn {
+  align-self: flex-start;
+  margin-bottom: 2px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid #1f2937;
+  background: #111827;
+  color: #e5e7eb;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.small-btn:hover {
+  background: #1f2937;
+}
+
 /* Hidden file inputs */
 #config-file-input,
 #import-file-input {
