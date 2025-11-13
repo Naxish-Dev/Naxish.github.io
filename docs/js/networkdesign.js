@@ -214,12 +214,21 @@ function showTooltipForDevice(deviceId, event) {
         html += `<div class="tooltip-line">${base}${kind}: ${iface.ip || "?"} / ${iface.mask || "?"}${gw}${dns}</div>`;
       });
     } else {
-      // Infra (Router/Switch/Firewall/Other/...): show L2 mode
+      // Infra (Router/Switch/Firewall/Other/...): show mode-specific info
       ifs.forEach((iface) => {
         const base = iface.name || "?";
         const mode = iface.mode || "L3";
-        const extra = iface.l2info ? ` (${iface.l2info})` : "";
-        html += `<div class="tooltip-line">${base} [${mode}${extra}]: ${iface.ip || "?"} / ${iface.mask || "?"}</div>`;
+        let info = "";
+
+        if (["L3", "Access", "Port-channel(L3)"].includes(mode)) {
+          info = `${iface.ip || "?"} / ${iface.mask || "?"}`;
+        } else if (mode === "Trunk") {
+          info = `allowed: ${iface.allowedVlans || "?"}, native: ${iface.nativeVlan || "?"}`;
+        } else if (mode === "Port-channel(L2)") {
+          info = `access: ${iface.pcAccessVlan || "-"}, trunk: ${iface.pcTrunkVlans || "-"}`;
+        }
+
+        html += `<div class="tooltip-line">${base} [${mode}]: ${info}</div>`;
       });
     }
 
@@ -281,7 +290,6 @@ function handleLinkModeClick(deviceId, deviceEl) {
       return;
     }
 
-    // Allow multiple links between same devices/interfaces
     const id = `L${linkCounter++}`;
     links.push({ id, fromId, fromIfName, toId, toIfName });
   }
@@ -301,9 +309,9 @@ function chooseInterfaceForLink(dev) {
 
   const menuLines = ifs.map((iface, idx) => {
     const label = iface.name || `IF-${idx + 1}`;
-    const ipTxt = iface.ip || "?";
-    const maskTxt = iface.mask || "?";
-    return `${idx + 1}) ${label} : ${ipTxt} / ${maskTxt}`;
+    const ipTxt = iface.ip || iface.pcAccessVlan || iface.allowedVlans || "?";
+    const maskTxt = iface.mask || iface.nativeVlan || iface.pcTrunkVlans || "";
+    return `${idx + 1}) ${label} : ${ipTxt} ${maskTxt ? "/ " + maskTxt : ""}`;
   });
   const answer = prompt(
     `Select interface on ${dev.name} (${dev.type}) for this link:\n` +
@@ -463,35 +471,97 @@ function renderInterfacesForDevice(dev) {
   }
 }
 
-// Infra: mode + name + ip + mask + l2info (VLANs / port-channel ID)
+// --- INFRA INTERFACES ---
+// Modes: L3, Access, Trunk, Port-channel(L2), Port-channel(L3)
 function addInfraInterfaceRow(iface = {}) {
   const row = document.createElement("div");
   row.className = "interface-row";
-  row.style.gridTemplateColumns = "1fr 1.2fr 1.2fr 1.2fr 1.2fr auto";
+  row.style.gridTemplateColumns = "0.9fr 1.2fr 1.2fr 1.2fr 1.2fr 1.2fr auto";
 
   const nameVal = iface.name || "";
   const mode = iface.mode || "L3";
-  const l2info = iface.l2info || "";
+
+  const ipVal = iface.ip || "";
+  const maskVal = iface.mask || "";
+  const extra1Val =
+    iface.allowedVlans ||
+    iface.pcAccessVlan ||
+    iface.l2info ||             // from older versions
+    "";
+  const extra2Val =
+    iface.nativeVlan ||
+    iface.pcTrunkVlans ||
+    "";
 
   row.innerHTML = `
     <select class="if-mode">
       <option value="L3"${mode === "L3" ? " selected" : ""}>L3</option>
       <option value="Access"${mode === "Access" ? " selected" : ""}>Access</option>
       <option value="Trunk"${mode === "Trunk" ? " selected" : ""}>Trunk</option>
-      <option value="Port-channel"${mode === "Port-channel" ? " selected" : ""}>Port-channel</option>
+      <option value="Port-channel(L2)"${mode === "Port-channel(L2)" ? " selected" : ""}>Port-channel(L2)</option>
+      <option value="Port-channel(L3)"${mode === "Port-channel(L3)" ? " selected" : ""}>Port-channel(L3)</option>
     </select>
     <input class="if-name" placeholder="Gig0/0" value="${nameVal}">
-    <input class="if-ip" placeholder="192.168.1.1" value="${iface.ip || ""}">
-    <input class="if-mask" placeholder="255.255.255.0" value="${iface.mask || ""}">
-    <input class="if-l2info" placeholder="VLAN 10 / 10,20 / Po1" value="${l2info}">
+    <input class="if-ip" value="${ipVal}">
+    <input class="if-mask" value="${maskVal}">
+    <input class="if-extra1" value="${extra1Val}">
+    <input class="if-extra2" value="${extra2Val}">
     <button type="button" class="if-delete">✕</button>
   `;
 
-  row.querySelector(".if-delete").addEventListener("click", () => row.remove());
+  const modeSel = row.querySelector(".if-mode");
+  const delBtn = row.querySelector(".if-delete");
+
+  modeSel.addEventListener("change", () => updateInfraRowVisibility(row));
+  delBtn.addEventListener("click", () => row.remove());
+
+  updateInfraRowVisibility(row);
   interfacesList.appendChild(row);
 }
 
-// Endpoint: kind (NIC/WIFI) + ip + mask + gw + dns
+// Show/hide & label fields based on mode
+function updateInfraRowVisibility(row) {
+  const mode = row.querySelector(".if-mode").value;
+  const ipInput = row.querySelector(".if-ip");
+  const maskInput = row.querySelector(".if-mask");
+  const extra1Input = row.querySelector(".if-extra1");
+  const extra2Input = row.querySelector(".if-extra2");
+
+  // Reset all visible
+  ipInput.style.display = "";
+  maskInput.style.display = "";
+  extra1Input.style.display = "";
+  extra2Input.style.display = "";
+
+  if (mode === "L3") {
+    ipInput.placeholder = "192.168.1.1";
+    maskInput.placeholder = "255.255.255.0";
+    extra1Input.style.display = "none";
+    extra2Input.style.display = "none";
+  } else if (mode === "Access") {
+    ipInput.placeholder = "192.168.1.1";
+    maskInput.placeholder = "255.255.255.0";
+    extra1Input.style.display = "none";
+    extra2Input.style.display = "none";
+  } else if (mode === "Trunk") {
+    ipInput.style.display = "none";
+    maskInput.style.display = "none";
+    extra1Input.placeholder = "Allowed VLANs (e.g. 10,20)";
+    extra2Input.placeholder = "Native VLAN (e.g. 10)";
+  } else if (mode === "Port-channel(L2)") {
+    ipInput.style.display = "none";
+    maskInput.style.display = "none";
+    extra1Input.placeholder = "Access VLAN (optional)";
+    extra2Input.placeholder = "Trunk VLANs (e.g. 10,20)";
+  } else if (mode === "Port-channel(L3)") {
+    ipInput.placeholder = "192.168.1.1";
+    maskInput.placeholder = "255.255.255.0";
+    extra1Input.style.display = "none";
+    extra2Input.style.display = "none";
+  }
+}
+
+// --- ENDPOINT INTERFACES ---
 function addEndpointInterfaceRow(iface = {}) {
   const row = document.createElement("div");
   row.className = "interface-row";
@@ -587,37 +657,47 @@ function collectInterfacesFromUI(devType) {
       const nameInput = row.querySelector(".if-name");
       const ipInput = row.querySelector(".if-ip");
       const maskInput = row.querySelector(".if-mask");
-      const l2infoInput = row.querySelector(".if-l2info");
+      const extra1Input = row.querySelector(".if-extra1");
+      const extra2Input = row.querySelector(".if-extra2");
 
       const mode = modeSel.value;
       const name = nameInput.value.trim();
       const ip = ipInput.value.trim();
       const mask = maskInput.value.trim();
-      const l2info = l2infoInput.value.trim();
+      const extra1 = extra1Input.value.trim();
+      const extra2 = extra2Input.value.trim();
 
       nameInput.classList.remove("error");
       ipInput.classList.remove("error");
       maskInput.classList.remove("error");
 
-      if (!name && !ip && !mask && !l2info) return;
+      if (!name && !ip && !mask && !extra1 && !extra2) return;
 
       let rowErr = false;
       if (!name) {
         nameInput.classList.add("error");
         rowErr = true;
       }
-      if (ip && !isValidIPv4(ip)) {
-        ipInput.classList.add("error");
-        rowErr = true;
-      }
-      if (mask && !isValidIPv4Mask(mask)) {
-        maskInput.classList.add("error");
-        rowErr = true;
-      }
-      if ((ip && !mask) || (!ip && mask)) {
-        ipInput.classList.add("error");
-        maskInput.classList.add("error");
-        rowErr = true;
+
+      // Validation based on mode
+      if (["L3", "Access", "Port-channel(L3)"].includes(mode)) {
+        if (ip || mask) {
+          if (!ip || !isValidIPv4(ip)) {
+            ipInput.classList.add("error");
+            rowErr = true;
+          }
+          if (!mask || !isValidIPv4Mask(mask)) {
+            maskInput.classList.add("error");
+            rowErr = true;
+          }
+        }
+      } else {
+        // Trunk / Port-channel(L2): no IP/mask expected
+        if (ip || mask) {
+          ipInput.classList.add("error");
+          maskInput.classList.add("error");
+          rowErr = true;
+        }
       }
 
       if (rowErr) {
@@ -625,7 +705,20 @@ function collectInterfacesFromUI(devType) {
         return;
       }
 
-      interfaces.push({ name, mode, ip, mask, l2info });
+      const iface = { name, mode };
+
+      if (["L3", "Access", "Port-channel(L3)"].includes(mode)) {
+        iface.ip = ip || "";
+        iface.mask = mask || "";
+      } else if (mode === "Trunk") {
+        iface.allowedVlans = extra1;
+        iface.nativeVlan = extra2;
+      } else if (mode === "Port-channel(L2)") {
+        iface.pcAccessVlan = extra1;
+        iface.pcTrunkVlans = extra2;
+      }
+
+      interfaces.push(iface);
     });
   }
 
@@ -761,7 +854,7 @@ function getLinkColor(link) {
   const fromIf = (from.interfaces || []).find((i) => i.name === link.fromIfName);
   const toIf = (to.interfaces || []).find((i) => i.name === link.toIfName);
 
-  if (fromIf && toIf) {
+  if (fromIf && toIf && fromIf.ip && fromIf.mask && toIf.ip && toIf.mask) {
     const key1 = getNetworkKey(fromIf.ip, fromIf.mask);
     const key2 = getNetworkKey(toIf.ip, toIf.mask);
     if (key1 && key2 && key1 === key2) {
@@ -774,9 +867,11 @@ function getLinkColor(link) {
   let sharedNet = null;
 
   for (const fi of fromIfs) {
+    if (!fi.ip || !fi.mask) continue;
     const k1 = getNetworkKey(fi.ip, fi.mask);
     if (!k1) continue;
     for (const ti of toIfs) {
+      if (!ti.ip || !ti.mask) continue;
       const k2 = getNetworkKey(ti.ip, ti.mask);
       if (!k2) continue;
       if (k1 === k2) {
@@ -808,7 +903,7 @@ function showLinkDetails(link) {
     : `${to.name}`;
 
   let netKey = null;
-  if (fromIf && toIf) {
+  if (fromIf && toIf && fromIf.ip && fromIf.mask && toIf.ip && toIf.mask) {
     const k1 = getNetworkKey(fromIf.ip, fromIf.mask);
     const k2 = getNetworkKey(toIf.ip, toIf.mask);
     if (k1 && k2 && k1 === k2) netKey = k1;
@@ -820,10 +915,10 @@ function showLinkDetails(link) {
   html += `<div class="detail-line"><strong>Endpoints:</strong> ${fromLabel}  ⇄  ${toLabel}</div>`;
 
   if (fromIf) {
-    html += `<div class="detail-line">${from.name} ${fromIf.name || ""}: ${fromIf.ip || "?"} / ${fromIf.mask || "?"}</div>`;
+    html += `<div class="detail-line">${from.name} ${fromIf.name || ""}: ${fromIf.ip || "?"} ${fromIf.mask ? "/ " + fromIf.mask : ""}</div>`;
   }
   if (toIf) {
-    html += `<div class="detail-line">${to.name} ${toIf.name || ""}: ${toIf.ip || "?"} / ${toIf.mask || "?"}</div>`;
+    html += `<div class="detail-line">${to.name} ${toIf.name || ""}: ${toIf.ip || "?"} ${toIf.mask ? "/ " + toIf.mask : ""}</div>`;
   }
 
   if (netKey) {
@@ -1025,34 +1120,40 @@ function exportConfigSummary() {
 
     (dev.interfaces || []).forEach((iface) => {
       const ifName = iface.name || "Gig0/0";
+      const mode = iface.mode || (iface.kind ? "Endpoint" : "L3");
+
       lines.push(`interface ${ifName}`);
 
-      // L3 address
-      if (iface.ip && iface.mask) {
+      if (["L3", "Access", "Port-channel(L3)"].includes(mode) && iface.ip && iface.mask) {
         lines.push(` ip address ${iface.ip} ${iface.mask}`);
-      }
-
-      // L2 mode specifics
-      if (iface.mode === "Access") {
-        lines.push(` switchport mode access`);
-        if (iface.l2info) {
-          lines.push(` switchport access vlan ${iface.l2info}`);
+        if (mode === "Access") {
+          lines.push(` ! L3 access port`);
         }
-      } else if (iface.mode === "Trunk") {
+        if (mode === "Port-channel(L3)") {
+          lines.push(` ! L3 port-channel`);
+        }
+      } else if (mode === "Trunk") {
         lines.push(` switchport trunk encapsulation dot1q`);
         lines.push(` switchport mode trunk`);
-        if (iface.l2info) {
-          lines.push(` switchport trunk allowed vlan ${iface.l2info}`);
+        if (iface.allowedVlans) {
+          lines.push(` switchport trunk allowed vlan ${iface.allowedVlans}`);
         }
-      } else if (iface.mode === "Port-channel") {
-        if (iface.l2info) {
-          lines.push(` channel-group ${iface.l2info} mode active`);
-        } else {
-          lines.push(` channel-group 1 mode active`);
+        if (iface.nativeVlan) {
+          lines.push(` switchport trunk native vlan ${iface.nativeVlan}`);
+        }
+      } else if (mode === "Port-channel(L2)") {
+        if (iface.pcAccessVlan) {
+          lines.push(` switchport mode access`);
+          lines.push(` switchport access vlan ${iface.pcAccessVlan}`);
+        }
+        if (iface.pcTrunkVlans) {
+          lines.push(` switchport trunk encapsulation dot1q`);
+          lines.push(` switchport mode trunk`);
+          lines.push(` switchport trunk allowed vlan ${iface.pcTrunkVlans}`);
         }
       }
 
-      // Endpoint style metadata if present (gw/dns)
+      // Endpoint metadata if present
       if (iface.gateway || iface.dns) {
         if (iface.gateway) {
           lines.push(` ! default-gateway ${iface.gateway}`);
