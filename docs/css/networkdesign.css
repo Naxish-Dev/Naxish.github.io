@@ -64,9 +64,10 @@ header {
   background: #14532d;
 }
 
+/* FIXED RIGHT PANEL WIDTH */
 .main {
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: minmax(0, 1fr) 340px;
   gap: 10px;
   flex: 1;
   min-height: 0;
@@ -180,6 +181,10 @@ header {
   flex-direction: column;
   gap: 8px;
   font-size: 13px;
+
+  min-width: 320px;
+  max-width: 360px;
+  overflow-y: auto;
 }
 
 #details-panel.hidden {
@@ -375,7 +380,7 @@ input.error {
   position: absolute;
   bottom: 8px;
   left: 8px;
-  max-width: 320px;
+  max-width: 340px;
   background: rgba(15, 23, 42, 0.98);
   border-radius: 10px;
   border: 1px solid #1f2937;
@@ -397,6 +402,23 @@ input.error {
 .link-details .detail-line {
   font-size: 11px;
   opacity: 0.9;
+}
+
+/* Delete-link button */
+.link-delete-btn {
+  margin-top: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid #7f1d1d;
+  background: #450a0a;
+  color: #fecaca;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.link-delete-btn:hover {
+  background: #7f1d1d;
+  border-color: #fecaca;
 }
 
 /* Hidden file inputs */

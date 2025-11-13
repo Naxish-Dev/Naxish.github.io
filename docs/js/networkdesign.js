@@ -151,13 +151,11 @@ function createDeviceElement(device) {
     if (e.button !== 0) return;
 
     if (linkMode) {
-      // In link mode: clicking picks endpoints instead of dragging
       e.preventDefault();
       handleLinkModeClick(device.id, el);
       return;
     }
 
-    // Normal dragging
     e.preventDefault();
     draggingDeviceEl = el;
     const rect = el.getBoundingClientRect();
@@ -205,13 +203,26 @@ function showTooltipForDevice(deviceId, event) {
   const ifs = dev.interfaces || [];
   if (ifs.length > 0) {
     html += `<div class="tooltip-section"><div class="tooltip-line"><strong>Interfaces:</strong></div>`;
-    ifs.forEach((iface) => {
-      const base = iface.name || "?";
-      const kind = iface.kind ? ` [${iface.kind}]` : "";
-      const gw = iface.gateway ? ` gw:${iface.gateway}` : "";
-      const dns = iface.dns ? ` dns:${iface.dns}` : "";
-      html += `<div class="tooltip-line">${base}${kind}: ${iface.ip || "?"} / ${iface.mask || "?"}${gw}${dns}</div>`;
-    });
+
+    if (isEndpointType(dev.type)) {
+      // Endpoint (Client/Server/Host/IoT): NIC/WIFI with GW + DNS
+      ifs.forEach((iface, idx) => {
+        const base = iface.name || `IF${idx + 1}`;
+        const kind = iface.kind ? ` [${iface.kind}]` : "";
+        const gw = iface.gateway ? ` gw:${iface.gateway}` : "";
+        const dns = iface.dns ? ` dns:${iface.dns}` : "";
+        html += `<div class="tooltip-line">${base}${kind}: ${iface.ip || "?"} / ${iface.mask || "?"}${gw}${dns}</div>`;
+      });
+    } else {
+      // Infra (Router/Switch/Firewall/Other/...): show L2 mode
+      ifs.forEach((iface) => {
+        const base = iface.name || "?";
+        const mode = iface.mode || "L3";
+        const extra = iface.l2info ? ` (${iface.l2info})` : "";
+        html += `<div class="tooltip-line">${base} [${mode}${extra}]: ${iface.ip || "?"} / ${iface.mask || "?"}</div>`;
+      });
+    }
+
     html += `</div>`;
   }
 
@@ -290,7 +301,9 @@ function chooseInterfaceForLink(dev) {
 
   const menuLines = ifs.map((iface, idx) => {
     const label = iface.name || `IF-${idx + 1}`;
-    return `${idx + 1}) ${label} : ${iface.ip || "?"} / ${iface.mask || "?"}`;
+    const ipTxt = iface.ip || "?";
+    const maskTxt = iface.mask || "?";
+    return `${idx + 1}) ${label} : ${ipTxt} / ${maskTxt}`;
   });
   const answer = prompt(
     `Select interface on ${dev.name} (${dev.type}) for this link:\n` +
@@ -450,18 +463,27 @@ function renderInterfacesForDevice(dev) {
   }
 }
 
-// Infra: name + ip + mask  (NO MORE RANDOM RENAMING)
+// Infra: mode + name + ip + mask + l2info (VLANs / port-channel ID)
 function addInfraInterfaceRow(iface = {}) {
   const row = document.createElement("div");
   row.className = "interface-row";
-  row.style.gridTemplateColumns = "1.2fr 1.2fr 1.2fr auto";
+  row.style.gridTemplateColumns = "1fr 1.2fr 1.2fr 1.2fr 1.2fr auto";
 
   const nameVal = iface.name || "";
+  const mode = iface.mode || "L3";
+  const l2info = iface.l2info || "";
 
   row.innerHTML = `
+    <select class="if-mode">
+      <option value="L3"${mode === "L3" ? " selected" : ""}>L3</option>
+      <option value="Access"${mode === "Access" ? " selected" : ""}>Access</option>
+      <option value="Trunk"${mode === "Trunk" ? " selected" : ""}>Trunk</option>
+      <option value="Port-channel"${mode === "Port-channel" ? " selected" : ""}>Port-channel</option>
+    </select>
     <input class="if-name" placeholder="Gig0/0" value="${nameVal}">
     <input class="if-ip" placeholder="192.168.1.1" value="${iface.ip || ""}">
     <input class="if-mask" placeholder="255.255.255.0" value="${iface.mask || ""}">
+    <input class="if-l2info" placeholder="VLAN 10 / 10,20 / Po1" value="${l2info}">
     <button type="button" class="if-delete">✕</button>
   `;
 
@@ -513,7 +535,7 @@ function collectInterfacesFromUI(devType) {
   let hasError = false;
 
   if (isEndpointType(devType)) {
-    rows.forEach((row) => {
+    rows.forEach((row, idx) => {
       const kindSel = row.querySelector(".if-kind");
       const ipInput = row.querySelector(".if-ip");
       const maskInput = row.querySelector(".if-mask");
@@ -556,36 +578,44 @@ function collectInterfacesFromUI(devType) {
         return;
       }
 
-      // Endpoint interfaces don't expose a name field – we can synthesize one if needed
-      const name = ifaceNameFromEndpoint(kind, interfaces.length);
+      const name = ifaceNameFromEndpoint(kind, idx);
       interfaces.push({ name, kind, ip, mask, gateway: gw, dns });
     });
   } else {
     rows.forEach((row) => {
+      const modeSel = row.querySelector(".if-mode");
       const nameInput = row.querySelector(".if-name");
       const ipInput = row.querySelector(".if-ip");
       const maskInput = row.querySelector(".if-mask");
+      const l2infoInput = row.querySelector(".if-l2info");
 
+      const mode = modeSel.value;
       const name = nameInput.value.trim();
       const ip = ipInput.value.trim();
       const mask = maskInput.value.trim();
+      const l2info = l2infoInput.value.trim();
 
       nameInput.classList.remove("error");
       ipInput.classList.remove("error");
       maskInput.classList.remove("error");
 
-      if (!name && !ip && !mask) return;
+      if (!name && !ip && !mask && !l2info) return;
 
       let rowErr = false;
       if (!name) {
         nameInput.classList.add("error");
         rowErr = true;
       }
-      if (!ip || !isValidIPv4(ip)) {
+      if (ip && !isValidIPv4(ip)) {
         ipInput.classList.add("error");
         rowErr = true;
       }
-      if (!mask || !isValidIPv4Mask(mask)) {
+      if (mask && !isValidIPv4Mask(mask)) {
+        maskInput.classList.add("error");
+        rowErr = true;
+      }
+      if ((ip && !mask) || (!ip && mask)) {
+        ipInput.classList.add("error");
         maskInput.classList.add("error");
         rowErr = true;
       }
@@ -595,8 +625,7 @@ function collectInterfacesFromUI(devType) {
         return;
       }
 
-      // IMPORTANT: use the name exactly as the user typed it (g0/0 stays g0/0)
-      interfaces.push({ name, ip, mask });
+      interfaces.push({ name, mode, ip, mask, l2info });
     });
   }
 
@@ -604,7 +633,6 @@ function collectInterfacesFromUI(devType) {
 }
 
 function ifaceNameFromEndpoint(kind, index) {
-  // For endpoints (client/server/host/IoT) we can name internal interfaces NIC1/WIFI1 etc.
   const base = kind === "WIFI" ? "WIFI" : "NIC";
   return `${base}${index + 1}`;
 }
@@ -763,7 +791,7 @@ function getLinkColor(link) {
   return getColorForSubnet(sharedNet);
 }
 
-// --- Link details panel ---
+// --- Link details panel + DELETE LINK ---
 function showLinkDetails(link) {
   const from = devices[link.fromId];
   const to = devices[link.toId];
@@ -805,10 +833,20 @@ function showLinkDetails(link) {
   }
 
   html += `<div class="detail-line"><strong>Color:</strong> <span style="color:${color};">■■■</span> ${color}</div>`;
+  html += `<button class="link-delete-btn delete-link-btn">Delete link</button>`;
   html += `<div class="detail-line" style="margin-top:4px;opacity:0.7;">Click in empty workspace or press Esc to hide.</div>`;
 
   linkDetailsBox.innerHTML = html;
   linkDetailsBox.classList.remove("hidden");
+
+  const delBtn = linkDetailsBox.querySelector(".delete-link-btn");
+  if (delBtn) {
+    delBtn.addEventListener("click", () => {
+      links = links.filter((l) => l.id !== link.id);
+      hideLinkDetails();
+      renderLinks();
+    });
+  }
 }
 
 function hideLinkDetails() {
@@ -834,7 +872,6 @@ function renderLinks() {
   linksLayer.setAttribute("height", height);
   linksLayer.innerHTML = "";
 
-  // Group links by device pair only (so all links between same two boxes become parallel)
   const groups = {};
   links.forEach((link) => {
     const key = [link.fromId, link.toId].sort().join("|");
@@ -868,7 +905,7 @@ function renderLinks() {
         const len = Math.sqrt(dx * dx + dy * dy) || 1;
         const px = -dy / len;
         const py = dx / len;
-        const spacing = 6; // pixels between parallel lines
+        const spacing = 6;
         const offsetIndex = indexInGroup - (n - 1) / 2;
         const offset = spacing * offsetIndex;
 
@@ -989,11 +1026,33 @@ function exportConfigSummary() {
     (dev.interfaces || []).forEach((iface) => {
       const ifName = iface.name || "Gig0/0";
       lines.push(`interface ${ifName}`);
+
+      // L3 address
       if (iface.ip && iface.mask) {
         lines.push(` ip address ${iface.ip} ${iface.mask}`);
-      } else {
-        lines.push(` ip address X.X.X.X 255.255.255.0`);
       }
+
+      // L2 mode specifics
+      if (iface.mode === "Access") {
+        lines.push(` switchport mode access`);
+        if (iface.l2info) {
+          lines.push(` switchport access vlan ${iface.l2info}`);
+        }
+      } else if (iface.mode === "Trunk") {
+        lines.push(` switchport trunk encapsulation dot1q`);
+        lines.push(` switchport mode trunk`);
+        if (iface.l2info) {
+          lines.push(` switchport trunk allowed vlan ${iface.l2info}`);
+        }
+      } else if (iface.mode === "Port-channel") {
+        if (iface.l2info) {
+          lines.push(` channel-group ${iface.l2info} mode active`);
+        } else {
+          lines.push(` channel-group 1 mode active`);
+        }
+      }
+
+      // Endpoint style metadata if present (gw/dns)
       if (iface.gateway || iface.dns) {
         if (iface.gateway) {
           lines.push(` ! default-gateway ${iface.gateway}`);
@@ -1002,6 +1061,7 @@ function exportConfigSummary() {
           lines.push(` ! dns-server ${iface.dns}`);
         }
       }
+
       lines.push(` no shutdown`);
       lines.push(`!`);
     });
