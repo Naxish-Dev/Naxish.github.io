@@ -1,1 +1,126 @@
-testsad
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Naxish | Portfolio</title>
+    <link rel="stylesheet" href="css/index.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Naxish</h1>
+      <p>Network Engineer | Full-Stack Enthusiast | Security Enthusiast</p>
+      <div class="buttons">
+        <a href="https://tryhackme.com/p/Naxish" target="_blank" class="button"
+          >TryHackMe</a
+        >
+        <a
+          href="https://app.hackthebox.com/profile/1349393"
+          target="_blank"
+          class="button"
+          >HackTheBox</a
+        >
+        <a href="https://github.com/Naxish-Dev" target="_blank" class="button"
+          >GitHub</a
+        >
+      </div>
+      <button
+        id="darkModeToggle"
+        class="theme-toggle"
+        aria-label="Toggle dark mode"
+      ></button>
+    </header>
+
+    <section class="about">
+      <h2>About Me</h2>
+      <p>
+        I'm a passionate network engineer with a strong interest in
+        cybersecurity and full-stack development. I enjoy building secure
+        infrastructure and tools that bridge networks and applications.
+        Currently expanding my skills in SDN and automation.
+      </p>
+    </section>
+
+    <section class="projects">
+      <h2>Project Showcase</h2>
+      <div class="project-grid">
+        <div class="project">
+          <h3>Networking Dashboard</h3>
+          <p>
+            Web-based SSH config parser for Cisco switches with categorization
+            and UI.
+          </p>
+          <a href="/login.html" target="_blank" class="project-link"
+            >Go to project</a
+          >
+        </div>
+        <div class="project">
+          <h3>SDN Firewall with REST API</h3>
+          <p>
+            Dynamic firewall implementation using Ryu Controller and Mininet for
+            SDN networks.
+          </p>
+          <a href="#" class="project-link">Go to project</a>
+        </div>
+        <div class="project">
+          <h3>High-Availability Cisco Network</h3>
+          <p>
+            Redundant core/distribution network with OSPF, HSRP, VLANs and
+            port-channels.
+          </p>
+          <a href="#" class="project-link">Go to project</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="skills">
+      <h2>Skills</h2>
+      <ul>
+        <li>Network Engineering (Cisco IOS, OSPF, VLAN, HSRP)</li>
+        <li>Security (TryHackMe, HackTheBox, Wireshark, Nmap)</li>
+        <li>Programming (Python, Bash, HTML/CSS, JS)</li>
+        <li>SDN (Ryu, OpenFlow, Mininet, OpenDaylight)</li>
+        <li>Linux (Ubuntu, Debian, SELinux, iptables)</li>
+      </ul>
+    </section>
+
+    <section class="blog">
+      <h2>Latest Writeups</h2>
+      <ul></ul>
+    </section>
+
+    <footer>
+      <p>&copy; 2025 Naxish. All rights reserved.</p>
+    </footer>
+
+    <script>
+      const toggleButton = document.getElementById("darkModeToggle");
+      const prefersDark = window.matchMedia(
+        "(prefers-color-scheme: dark)"
+      ).matches;
+
+      function updateButtonLabel() {
+        toggleButton.textContent = document.body.classList.contains("dark-mode")
+          ? "Light Mode"
+          : "Dark Mode";
+      }
+
+      if (
+        localStorage.getItem("theme") === "dark" ||
+        (!localStorage.getItem("theme") && prefersDark)
+      ) {
+        document.body.classList.add("dark-mode");
+      }
+      updateButtonLabel();
+
+      toggleButton.addEventListener("click", () => {
+        document.body.classList.toggle("dark-mode");
+        const mode = document.body.classList.contains("dark-mode")
+          ? "dark"
+          : "light";
+        localStorage.setItem("theme", mode);
+        updateButtonLabel();
+      });
+    </script>
+  </body>
+</html>
