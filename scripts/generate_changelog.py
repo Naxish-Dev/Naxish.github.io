@@ -21,26 +21,49 @@ SKIP_CONTAINS = [
     "CNAME",
 ]
 
+# How many dates to include (newest first)
+MAX_DAYS = 7   # Change as needed
+
+
 def is_noise(subject: str) -> bool:
     subject = subject.strip()
     if not subject:
         return True
+
+    lower = subject.lower()
+
+    # Skip explicit junk
     if subject in SKIP_EXACT:
         return True
+
+    # Skip messages starting with prefixes
     for p in SKIP_PREFIXES:
         if subject.startswith(p):
             return True
+
+    # Skip messages containing substrings
     for c in SKIP_CONTAINS:
-        if c in subject:
+        if c.lower() in lower:
             return True
-    # Very short junk messages
+
+    # Skip chore commits (e.g. "chore: something")
+    if lower.startswith("chore:"):
+        return True
+
+    # Skip commits intentionally marked no-log
+    if "-nolog" in lower:
+        return True
+
+    # Very short junk
     if len(subject) <= 2:
         return True
+
     return False
+
 
 def get_git_log():
     """
-    Returns lines like: 2025-11-14|Updead to the changelog system
+    Returns lines like: 2025-11-14|Message text
     """
     cmd = [
         "git",
@@ -51,13 +74,10 @@ def get_git_log():
     result = subprocess.run(cmd, check=True, capture_output=True, text=True)
     return result.stdout.splitlines()
 
+
 def normalize_subject(subject: str) -> str:
-    """
-    Here you can lightly clean up messages.
-    We're not doing full 'professional rewording',
-    but you can tweak common patterns here.
-    """
     return subject.strip().capitalize()
+
 
 def build_changelog():
     log_lines = get_git_log()
@@ -79,16 +99,14 @@ def build_changelog():
         if normalized not in by_date[date_str]:
             by_date[date_str].append(normalized)
 
-    # Sort dates descending (newest first)
-    sorted_dates = sorted(by_date.keys(), reverse=True)
+    # Sort newest dates first, limit to MAX_DAYS
+    sorted_dates = sorted(by_date.keys(), reverse=True)[:MAX_DAYS]
 
     lines = []
     for date_str in sorted_dates:
-        # Ensure valid date formatting (YYYY-MM-DD)
         try:
             datetime.strptime(date_str, "%Y-%m-%d")
         except ValueError:
-            # Skip weird dates just in case
             continue
 
         changes = by_date[date_str]
@@ -98,16 +116,24 @@ def build_changelog():
         lines.append(date_str)
         for c in changes:
             lines.append(f"- {c}")
-        lines.append("")  # blank line between days
+        lines.append("")
 
     return "\n".join(lines).strip() + "\n"
 
+
 def main():
     changelog = build_changelog()
-    out_path = os.path.join(os.getcwd(), "docs", "changelog.txt")
+
+    repo_root = os.getcwd()
+    docs_dir = os.path.join(repo_root, "docs")
+    os.makedirs(docs_dir, exist_ok=True)
+
+    out_path = os.path.join(docs_dir, "changelog.txt")
     with open(out_path, "w", encoding="utf-8") as f:
         f.write(changelog)
+
     print("Generated docs/changelog.txt")
+
 
 if __name__ == "__main__":
     main()
