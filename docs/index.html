@@ -106,7 +106,7 @@
 
       <div id="changelogContainer" class="changelog hidden">
         <h3>Changelog</h3>
-        <pre id="changelogContent">Loading...</pre>
+        <pre id="changelogContent"></pre>
       </div>
     </footer>
 
@@ -139,38 +139,24 @@
         updateButtonLabel();
       });
 
-      // === Changelog logic ===
+      // --- Changelog logic ---
       const changelogToggle = document.getElementById("changelogToggle");
       const changelogContainer = document.getElementById("changelogContainer");
       const changelogContent = document.getElementById("changelogContent");
 
-      let changelogLoaded = false;
+      // Load changelog in background once on page load
+      fetch("changelog.txt")
+        .then((res) => res.text())
+        .then((text) => {
+          changelogContent.textContent = text;
+        })
+        .catch(() => {
+          changelogContent.textContent = "Changelog could not be loaded.";
+        });
 
+      // Toggle visibility only
       changelogToggle.addEventListener("click", () => {
-        // Toggle visibility
         changelogContainer.classList.toggle("hidden");
-
-        // Only fetch once
-        if (
-          !changelogLoaded &&
-          !changelogContainer.classList.contains("hidden")
-        ) {
-          fetch("changelog.txt") // relative to index.html
-            .then((response) => {
-              if (!response.ok) {
-                throw new Error("Failed to load changelog");
-              }
-              return response.text();
-            })
-            .then((text) => {
-              changelogContent.textContent = text;
-              changelogLoaded = true;
-            })
-            .catch((err) => {
-              changelogContent.textContent = "Could not load changelog.";
-              console.error(err);
-            });
-        }
       });
     </script>
   </body>
