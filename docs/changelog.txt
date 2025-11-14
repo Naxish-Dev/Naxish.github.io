@@ -1,0 +1,6 @@
+2025-11-14
+- Added changelog button
+- Improved dark mode toggle
+
+2025-11-10
+- Initial portfolio release
