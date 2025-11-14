@@ -1,0 +1,43 @@
+name: Generate changelog
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  changelog:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write # allow committing back to the repo
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # need full history for git log
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Generate changelog.txt
+        run: |
+          python scripts/generate_changelog.py
+
+      - name: Commit and push changelog.txt
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add changelog.txt
+
+          # If there are no changes, do not commit
+          if git diff --cached --quiet; then
+            echo "No changes to changelog.txt"
+            exit 0
+          fi
+
+          git commit -m "chore: update changelog"
+          git push
