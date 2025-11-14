@@ -1,8 +1,6 @@
 2025-11-14
-- -nolog
 - Hotfix changelog
 - Fixing wrong location of changelog file.
-- Chore: update changelog
 - Changelog.yml added to add github action
 - Added automatic generation of changelog.
 - Updead to the changelog system
