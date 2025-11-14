@@ -104,7 +104,7 @@ def build_changelog():
 
 def main():
     changelog = build_changelog()
-    out_path = os.path.join(os.getcwd(), "changelog.txt")
+    out_path = os.path.join(os.getcwd(), "/docs/changelog.txt")
     with open(out_path, "w", encoding="utf-8") as f:
         f.write(changelog)
     print("Generated changelog.txt")
