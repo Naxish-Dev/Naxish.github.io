@@ -9,7 +9,7 @@
   <body>
     <header>
       <h1>Naxish</h1>
-      <p>Network Engineer | Full-Stack Enthusiast | Security Enthusiast</p>
+      <p>Network Engineer | Security Enthusiast | DevOps Enthusiast</p>
       <div class="buttons">
         <a href="https://tryhackme.com/p/Naxish" target="_blank" class="button"
           >TryHackMe</a
@@ -35,9 +35,9 @@
       <h2>About Me</h2>
       <p>
         I'm a passionate network engineer with a strong interest in
-        cybersecurity and full-stack development. I enjoy building secure
-        infrastructure and tools that bridge networks and applications.
-        Currently expanding my skills in SDN and automation.
+        cybersecurity and DevOps. I enjoy building secure infrastructure and
+        tools that bridge networks and applications. Currently expanding my
+        skills in SDN and automation.
       </p>
     </section>
 
@@ -46,9 +46,7 @@
       <div class="project-grid">
         <div class="project">
           <h3>Network Design visualization (WIP)</h3>
-          <p>
-            Web-based Network Designer
-          </p>
+          <p>Web-based Network Designer</p>
           <a href="/NetworkDesign.html" target="_blank" class="project-link"
             >Go to project</a
           >
@@ -78,7 +76,8 @@
         <li>Network Engineering (Cisco IOS, OSPF, VLAN, HSRP)</li>
         <li>Network DESIGN (hierarchical, Spine-Leaf)</li>
         <li>Security (TryHackMe, HackTheBox, Wireshark, Nmap)</li>
-        <li>Programming (Python, Bash, HTML/CSS, JS)</li>
+        <li>Programming (Python, HTML/CSS, JS)</li>
+        <li>Powershell/Bash Automation</li>
         <li>SDN (Ryu, OpenFlow, Mininet, OpenDaylight)</li>
         <li>Linux (Ubuntu, Debian, SELinux, iptables)</li>
         <li>365 Administrator (Sharepoint etc.)</li>
@@ -103,6 +102,12 @@
 
     <footer>
       <p>&copy; 2025 Naxish. All rights reserved.</p>
+      <button id="changelogToggle" class="button">View Changelog</button>
+
+      <div id="changelogContainer" class="changelog hidden">
+        <h3>Changelog</h3>
+        <pre id="changelogContent"></pre>
+      </div>
     </footer>
 
     <script>
@@ -132,6 +137,26 @@
           : "light";
         localStorage.setItem("theme", mode);
         updateButtonLabel();
+      });
+
+      // --- Changelog logic ---
+      const changelogToggle = document.getElementById("changelogToggle");
+      const changelogContainer = document.getElementById("changelogContainer");
+      const changelogContent = document.getElementById("changelogContent");
+
+      // Load changelog in background once on page load
+      fetch("changelog.txt")
+        .then((res) => res.text())
+        .then((text) => {
+          changelogContent.textContent = text;
+        })
+        .catch(() => {
+          changelogContent.textContent = "Changelog could not be loaded.";
+        });
+
+      // Toggle visibility only
+      changelogToggle.addEventListener("click", () => {
+        changelogContainer.classList.toggle("hidden");
       });
     </script>
   </body>
