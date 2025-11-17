@@ -12,3 +12,4 @@ once you leave it, it will show the previous workspace again (Creating this virt
 - Creating writeups
 - Visualize the Dark Mode function abit more.
 - Consider new method for Changelog location and display?
+- Fix the mobile phone layout
