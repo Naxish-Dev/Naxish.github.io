@@ -272,6 +272,28 @@ body.dark-mode .about h2 {
   background: linear-gradient(135deg, #0077b6, #00b4d8);
 }
 
+.skills li.info-box {
+  cursor: help;
+}
+
+.skills li.clickable-box {
+  cursor: pointer;
+}
+
+.skills li.clickable-box a {
+  display: block;
+  width: 100%;
+  height: 100%;
+  color: inherit;
+  text-decoration: none;
+}
+
+.skills li.clickable-box a:visited,
+.skills li.clickable-box a:hover,
+.skills li.clickable-box a:active {
+  color: inherit;
+}
+
 body.dark-mode .skills li {
   background: linear-gradient(135deg, #274157, #1e2a38);
   color: #90e0ef;
