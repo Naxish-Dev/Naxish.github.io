@@ -1,3 +1,6 @@
+2025-11-17
+- Nolog
+
 2025-11-14
 - Hotfix changelog
 - Fixing wrong location of changelog file.
