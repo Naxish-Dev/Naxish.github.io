@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Packet Collector - An idle network engineering game">
+    <title>Packet Collector | Naxish</title>
+    <link rel="stylesheet" href="css/packetgame.css">
+</head>
+<body>
+    <div class="game-container">
+        <header class="game-header">
+            <h1>📦 Packet Collector</h1>
+            <button id="themeToggle" class="theme-btn" aria-label="Toggle dark mode">Dark Mode</button>
+            <a href="index.html" class="back-btn">← Back to Portfolio</a>
+        </header>
+
+        <div class="stats-panel">
+            <div class="stat-box">
+                <div class="stat-label">Packets</div>
+                <div class="stat-value" id="packets">0</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Per Second</div>
+                <div class="stat-value" id="packetsPerSec">0</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Total Collected</div>
+                <div class="stat-value" id="totalPackets">0</div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="clicker-section">
+                <button id="clickButton" class="click-button" aria-label="Click to collect packets">
+                    <div class="packet-icon">📦</div>
+                    <div class="click-text">Click to Collect!</div>
+                </button>
+                <div class="click-power">+<span id="clickPower">1</span> per click</div>
+            </div>
+
+            <div class="upgrades-section">
+                <h2>🔧 Upgrades</h2>
+                <div class="upgrade-grid" id="upgradesList">
+                    <!-- Upgrades populated by JS -->
+                </div>
+            </div>
+
+            <div class="automation-section">
+                <h2>🤖 Automation</h2>
+                <div class="automation-grid" id="automationList">
+                    <!-- Automation populated by JS -->
+                </div>
+            </div>
+        </div>
+
+        <div class="achievements-panel">
+            <h2>🏆 Achievements</h2>
+            <div class="achievements-grid" id="achievementsList">
+                <!-- Achievements populated by JS -->
+            </div>
+        </div>
+
+        <footer class="game-footer">
+            <button id="saveBtn" class="action-btn">💾 Save Game</button>
+            <button id="resetBtn" class="action-btn danger">🔄 Reset Progress</button>
+            <p class="save-info">Auto-saves every 30 seconds</p>
+        </footer>
+    </div>
+
+    <script src="js/packetgame.js"></script>
+</body>
+</html>

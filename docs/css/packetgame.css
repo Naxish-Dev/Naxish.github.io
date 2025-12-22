@@ -1,0 +1,492 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  color: #333;
+  padding: 1rem;
+  transition: background 0.3s ease;
+}
+
+body.dark-mode {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  color: #e0e0e0;
+}
+
+.game-container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Header */
+.game-header {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 1.5rem;
+  border-radius: 15px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+body.dark-mode .game-header {
+  background: rgba(30, 30, 46, 0.95);
+}
+
+.game-header h1 {
+  font-size: 2rem;
+  color: #667eea;
+  margin: 0;
+}
+
+body.dark-mode .game-header h1 {
+  color: #8b9bff;
+}
+
+.theme-btn,
+.back-btn {
+  padding: 0.6rem 1.2rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  text-decoration: none;
+  display: inline-block;
+  transition: all 0.3s ease;
+}
+
+.theme-btn {
+  background: #667eea;
+  color: white;
+}
+
+.theme-btn:hover {
+  background: #5568d3;
+  transform: translateY(-2px);
+}
+
+.back-btn {
+  background: #48bb78;
+  color: white;
+}
+
+.back-btn:hover {
+  background: #38a169;
+  transform: translateY(-2px);
+}
+
+/* Stats Panel */
+.stats-panel {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.stat-box {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+body.dark-mode .stat-box {
+  background: rgba(30, 30, 46, 0.95);
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+body.dark-mode .stat-label {
+  color: #a0a0c0;
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #667eea;
+}
+
+body.dark-mode .stat-value {
+  color: #8b9bff;
+}
+
+/* Main Content */
+.main-content {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Clicker Section */
+.clicker-section {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 2rem;
+  border-radius: 15px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+body.dark-mode .clicker-section {
+  background: rgba(30, 30, 46, 0.95);
+}
+
+.click-button {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  border: none;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.click-button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 12px 32px rgba(102, 126, 234, 0.6);
+}
+
+.click-button:active {
+  transform: scale(0.95);
+}
+
+.packet-icon {
+  font-size: 4rem;
+}
+
+.click-text {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-top: 0.5rem;
+}
+
+.click-power {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #667eea;
+}
+
+body.dark-mode .click-power {
+  color: #8b9bff;
+}
+
+/* Upgrades and Automation */
+.upgrades-section,
+.automation-section {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 1.5rem;
+  border-radius: 15px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+body.dark-mode .upgrades-section,
+body.dark-mode .automation-section {
+  background: rgba(30, 30, 46, 0.95);
+}
+
+.upgrades-section h2,
+.automation-section h2 {
+  margin-bottom: 1rem;
+  color: #667eea;
+}
+
+body.dark-mode .upgrades-section h2,
+body.dark-mode .automation-section h2 {
+  color: #8b9bff;
+}
+
+.upgrade-grid,
+.automation-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.upgrade-item,
+.automation-item {
+  background: rgba(102, 126, 234, 0.1);
+  padding: 1rem;
+  border-radius: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+body.dark-mode .upgrade-item,
+body.dark-mode .automation-item {
+  background: rgba(139, 155, 255, 0.1);
+}
+
+.upgrade-item:hover,
+.automation-item:hover {
+  background: rgba(102, 126, 234, 0.2);
+}
+
+.upgrade-info,
+.automation-info {
+  flex: 1;
+}
+
+.upgrade-name,
+.automation-name {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.upgrade-desc,
+.automation-desc {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+body.dark-mode .upgrade-desc,
+body.dark-mode .automation-desc {
+  color: #a0a0c0;
+}
+
+.upgrade-btn,
+.automation-btn {
+  padding: 0.6rem 1.2rem;
+  border: none;
+  border-radius: 8px;
+  background: #667eea;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.upgrade-btn:hover,
+.automation-btn:hover {
+  background: #5568d3;
+  transform: translateY(-2px);
+}
+
+.upgrade-btn:disabled,
+.automation-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+}
+
+body.dark-mode .upgrade-btn:disabled,
+body.dark-mode .automation-btn:disabled {
+  background: #444;
+}
+
+.automation-count {
+  font-size: 0.85rem;
+  color: #667eea;
+  margin-top: 0.25rem;
+}
+
+body.dark-mode .automation-count {
+  color: #8b9bff;
+}
+
+/* Achievements */
+.achievements-panel {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 1.5rem;
+  border-radius: 15px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  margin-bottom: 1.5rem;
+}
+
+body.dark-mode .achievements-panel {
+  background: rgba(30, 30, 46, 0.95);
+}
+
+.achievements-panel h2 {
+  margin-bottom: 1rem;
+  color: #667eea;
+}
+
+body.dark-mode .achievements-panel h2 {
+  color: #8b9bff;
+}
+
+.achievements-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.achievement-item {
+  background: rgba(102, 126, 234, 0.1);
+  padding: 1rem;
+  border-radius: 10px;
+  text-align: center;
+  transition: all 0.3s ease;
+  opacity: 0.5;
+}
+
+body.dark-mode .achievement-item {
+  background: rgba(139, 155, 255, 0.1);
+}
+
+.achievement-item.unlocked {
+  opacity: 1;
+  background: rgba(72, 187, 120, 0.2);
+}
+
+.achievement-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.achievement-name {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.achievement-desc {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+body.dark-mode .achievement-desc {
+  color: #a0a0c0;
+}
+
+/* Footer */
+.game-footer {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 1.5rem;
+  border-radius: 15px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+body.dark-mode .game-footer {
+  background: rgba(30, 30, 46, 0.95);
+}
+
+.action-btn {
+  padding: 0.6rem 1.2rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: #667eea;
+  color: white;
+}
+
+.action-btn:hover {
+  transform: translateY(-2px);
+}
+
+.action-btn.danger {
+  background: #e53e3e;
+}
+
+.action-btn.danger:hover {
+  background: #c53030;
+}
+
+.save-info {
+  color: #666;
+  font-size: 0.85rem;
+}
+
+body.dark-mode .save-info {
+  color: #a0a0c0;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .main-content {
+    grid-template-columns: 1fr;
+  }
+
+  .game-header {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .stats-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .click-button {
+    width: 150px;
+    height: 150px;
+  }
+
+  .packet-icon {
+    font-size: 3rem;
+  }
+
+  .achievements-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Animations */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.click-button.clicked {
+  animation: pulse 0.2s ease;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.upgrade-item,
+.automation-item,
+.achievement-item {
+  animation: slideIn 0.3s ease;
+}
