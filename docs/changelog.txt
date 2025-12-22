@@ -1,4 +1,6 @@
 2025-12-22
+- Link fix
+- Link update
 - Fix link to network design tool in index.html
 - Rename networkdesign.html to networkdesign.html
 - Visual and small hotfix update.
