@@ -1,4 +1,5 @@
 2025-12-22
+- Rename networkdesign.html to networkdesign.html
 - Visual and small hotfix update.
 - Test: trigger status checks
 - Test: trigger ci/cd
