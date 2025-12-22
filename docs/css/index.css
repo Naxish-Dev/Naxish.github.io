@@ -227,8 +227,11 @@ body.dark-mode .changelog pre {
     padding: 0.35rem 0.5rem;
     border-radius: 10px;
     min-width: auto;
+    max-width: 85px;
+    max-height: 30px;
     white-space: nowrap;
     overflow: hidden;
+    line-height: 1.2;
   }
 
   .project-grid {
