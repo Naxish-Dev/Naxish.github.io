@@ -4,7 +4,8 @@ Portfolio website showcasing network engineering projects, skills, and professio
 
 ## 🌐 Live Site
 
-Visit: [https://naxish.github.io](https://naxish.github.io)
+Visit: [https://naxish.github.io](https://naxish.github.io)  
+*(Note: Enable GitHub Pages in repository settings under Settings → Pages → Deploy from branch → main → /docs)*
 
 ## ✨ Features
 
