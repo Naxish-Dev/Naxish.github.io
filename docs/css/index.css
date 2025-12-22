@@ -308,3 +308,50 @@ body.dark-mode .skills li:hover {
 header {
   position: relative;
 }
+
+/* Loading state for changelog */
+#changelogContent.loading::before {
+  content: "Loading...";
+  opacity: 0.6;
+  font-style: italic;
+}
+
+/* Smooth transitions for interactive elements */
+.button,
+.project,
+.skills li {
+  will-change: transform;
+}
+
+/* Focus styles for accessibility */
+*:focus-visible {
+  outline: 2px solid #0077b6;
+  outline-offset: 2px;
+}
+
+body.dark-mode *:focus-visible {
+  outline-color: #2ec4b6;
+}
+
+/* Improved button accessibility */
+.button:focus,
+.theme-toggle:focus {
+  outline: 2px solid #ffd60a;
+  outline-offset: 3px;
+}
+
+/* Skip to main content link (for screen readers) */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: #0077b6;
+  color: white;
+  padding: 8px;
+  text-decoration: none;
+  z-index: 100;
+}
+
+.skip-link:focus {
+  top: 0;
+}
