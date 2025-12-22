@@ -1,4 +1,5 @@
 2025-12-22
+- Test: trigger status checks
 - Test: trigger ci/cd
 - Fix: ignore github pages url in link checker until site is deployed
 - Fixed critical issues, broken link, xss protection, seo .& meta tags, wcag 2.1 compliant. improved code quality, updated input validation. tweaks for user experiance. added readme and improvements documentation. created backups of old code.
