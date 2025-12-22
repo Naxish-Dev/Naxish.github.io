@@ -71,4 +71,13 @@ config.local.js
 .parcel-cache/
 
 # Testing
-.pytest_cache/
+.pytest_cache/test.md
+trigger.txt
+*-test.html
+*-Test.html
+
+# Development notes
+Todo.txt
+todo.txt
+notes.txt
+Notes.txt
