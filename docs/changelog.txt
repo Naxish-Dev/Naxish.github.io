@@ -1,4 +1,5 @@
 2025-12-22
+- Fix link to network design tool in index.html
 - Rename networkdesign.html to networkdesign.html
 - Visual and small hotfix update.
 - Test: trigger status checks
