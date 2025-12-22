@@ -8,13 +8,13 @@ const toggleButton = document.getElementById("darkModeToggle");
 const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
 
 /**
- * Updates the dark mode toggle button text
+ * Updates the dark mode toggle button text and accessibility
  */
 function updateButtonLabel() {
   if (toggleButton) {
-    toggleButton.textContent = document.body.classList.contains("dark-mode")
-      ? "Light Mode"
-      : "Dark Mode";
+    const isDark = document.body.classList.contains("dark-mode");
+    toggleButton.textContent = isDark ? "Light Mode" : "Dark Mode";
+    toggleButton.setAttribute("aria-label", `Switch to ${isDark ? "light" : "dark"} mode`);
   }
 }
 
