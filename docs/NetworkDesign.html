@@ -2,66 +2,72 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Network Topology Builder</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Interactive web-based network topology builder and designer for creating, visualizing, and exporting network diagrams." />
+  <meta name="keywords" content="Network Design, Topology Builder, Network Visualization, Cisco Config, Network Diagram" />
+  <meta name="author" content="Naxish" />
+  <title>Network Topology Builder | Naxish</title>
   <link rel="stylesheet" href="css/networkdesign.css" />
 </head>
 <body>
-<div class="app">
-  <header>Network Topology Builder</header>
+<div class="app" role="application" aria-label="Network Topology Builder Application">
+  <header role="banner">
+    <h1>Network Topology Builder</h1>
+  </header>
 
-  <div class="toolbar">
+  <div class="toolbar" role="toolbar" aria-label="Topology editing tools">
     <!-- Device buttons -->
-    <button data-device-type="Router">Add Router</button>
-    <button data-device-type="Switch">Add Switch</button>
-    <button data-device-type="Host">Add Host</button>
-    <button data-device-type="Client">Add Client</button>
-    <button data-device-type="Server">Add Server</button>
-    <button data-device-type="IoT">Add IoT</button>
-    <button data-device-type="ISP">Add ISP</button>
+    <button data-device-type="Router" aria-label="Add Router device">Add Router</button>
+    <button data-device-type="Switch" aria-label="Add Switch device">Add Switch</button>
+    <button data-device-type="Host" aria-label="Add Host device">Add Host</button>
+    <button data-device-type="Client" aria-label="Add Client device">Add Client</button>
+    <button data-device-type="Server" aria-label="Add Server device">Add Server</button>
+    <button data-device-type="IoT" aria-label="Add IoT device">Add IoT</button>
+    <button data-device-type="ISP" aria-label="Add ISP device">Add ISP</button>
 
     <!-- Link mode -->
-    <button id="toggle-link-mode">Link mode: OFF</button>
+    <button id="toggle-link-mode" aria-label="Toggle link mode" aria-pressed="false">Link mode: OFF</button>
 
     <!-- Export / Import -->
-    <button id="export-topology">Export topology</button>
-    <button id="import-topology">Import topology</button>
+    <button id="export-topology" aria-label="Export topology as JSON">Export topology</button>
+    <button id="import-topology" aria-label="Import topology from JSON">Import topology</button>
 
     <!-- Cisco-style config summary -->
-    <button id="export-config-summary">Export config summary</button>
+    <button id="export-config-summary" aria-label="Export Cisco-style configuration summary">Export config summary</button>
   </div>
 
   <div class="main">
     <!-- Workspace (topology canvas) -->
-    <div id="workspace">
+    <div id="workspace" role="region" aria-label="Network topology canvas">
       <!-- SVG layer for links -->
-      <svg id="links-layer"></svg>
-      <div class="hint">
+      <svg id="links-layer" aria-label="Network connections layer"></svg>
+      <div class="hint" aria-hidden="true">
         Left-click to drag · Toggle "Link mode" to connect devices · Right-click a device for options
       </div>
 
       <!-- Hover tooltip for devices -->
-      <div id="device-tooltip" class="tooltip hidden"></div>
+      <div id="device-tooltip" class="tooltip hidden" role="tooltip" aria-hidden="true"></div>
 
       <!-- Link details on click -->
-      <div id="link-details" class="link-details hidden"></div>
+      <div id="link-details" class="link-details hidden" role="dialog" aria-label="Link details"></div>
     </div>
 
     <!-- Details / config panel -->
-    <aside id="details-panel" class="hidden">
+    <aside id="details-panel" class="hidden" role="complementary" aria-label="Device settings panel">
       <h2>Device Settings</h2>
-      <div class="badge">
-        <span class="badge-dot"></span>
-        <span id="panel-device-id">No device selected</span>
+      <div class="badge" role="status">
+        <span class="badge-dot" aria-hidden="true"></span>
+        <span id="panel-device-id" aria-live="polite">No device selected</span>
       </div>
 
       <div class="field">
         <label for="panel-name">Name</label>
-        <input id="panel-name" type="text" placeholder="R1, SW1, Server01 ..." />
+        <input id="panel-name" type="text" placeholder="R1, SW1, Server01 ..." aria-required="false" />
       </div>
 
       <div class="field">
         <label for="panel-type">Type</label>
-        <select id="panel-type">
+        <select id="panel-type" aria-label="Device type">
           <option>Router</option>
           <option>Switch</option>
           <option>Host</option>
@@ -76,15 +82,15 @@
 
       <div class="field">
         <label for="panel-ip">Management IP (optional)</label>
-        <input id="panel-ip" type="text" placeholder="10.0.0.1" />
-        <div class="small" id="ip-error" style="display:none;">Invalid IPv4 address.</div>
+        <input id="panel-ip" type="text" placeholder="10.0.0.1" aria-describedby="ip-error" />
+        <div class="small" id="ip-error" role="alert" style="display:none;">Invalid IPv4 address.</div>
       </div>
 
       <div class="field">
-        <label>Interfaces</label>
-        <div id="interfaces-list"></div>
-        <button type="button" class="small-btn" id="add-interface">+ Add interface</button>
-        <div class="small" id="interfaces-help">
+        <label id="interfaces-label">Interfaces</label>
+        <div id="interfaces-list" role="list" aria-labelledby="interfaces-label"></div>
+        <button type="button" class="small-btn" id="add-interface" aria-label="Add new interface">+ Add interface</button>
+        <div class="small" id="interfaces-help" aria-describedby="interfaces-label">
           Routers/Switches/etc: name + IP + subnet.<br>
           Hosts/Clients/Servers/IoT: NIC/WIFI + IP + subnet + gateway + DNS.
         </div>
@@ -92,33 +98,33 @@
 
       <div class="field">
         <label for="panel-config">Config (paste or upload)</label>
-        <textarea id="panel-config" placeholder="# Running-config or similar"></textarea>
-        <div class="small">
+        <textarea id="panel-config" placeholder="# Running-config or similar" aria-describedby="config-help"></textarea>
+        <div class="small" id="config-help">
           Tip: Right-click device → "Upload config file" to import from a file.
         </div>
       </div>
 
       <div class="panel-buttons">
-        <button class="secondary" id="panel-close">Close</button>
-        <button class="primary" id="panel-save">Save</button>
+        <button class="secondary" id="panel-close" aria-label="Close settings panel">Close</button>
+        <button class="primary" id="panel-save" aria-label="Save device settings">Save</button>
       </div>
 
-      <div id="no-selection" class="no-selection hidden">
+      <div id="no-selection" class="no-selection hidden" role="status">
         No device selected. Right-click a device and choose "Edit settings".
       </div>
     </aside>
   </div>
 
   <!-- Custom right-click context menu -->
-  <div id="context-menu" class="context-menu hidden">
-    <button data-action="edit">Edit settings</button>
-    <button data-action="upload-config">Upload config file</button>
-    <button data-action="delete">Delete device</button>
+  <div id="context-menu" class="context-menu hidden" role="menu" aria-label="Device actions">
+    <button data-action="edit" role="menuitem">Edit settings</button>
+    <button data-action="upload-config" role="menuitem">Upload config file</button>
+    <button data-action="delete" role="menuitem">Delete device</button>
   </div>
 
   <!-- Hidden file inputs -->
-  <input type="file" id="config-file-input" accept=".txt,.cfg,.conf,.log,.ini" />
-  <input type="file" id="import-file-input" accept=".json" />
+  <input type="file" id="config-file-input" accept=".txt,.cfg,.conf,.log,.ini" aria-label="Select configuration file" />
+  <input type="file" id="import-file-input" accept=".json" aria-label="Select topology JSON file" />
 </div>
 
 <script src="js/networkdesign.js"></script>

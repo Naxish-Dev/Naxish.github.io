@@ -3,6 +3,22 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Network Engineer and Security Enthusiast specializing in SDN, DevOps, and cybersecurity. Portfolio showcasing network design tools and infrastructure projects." />
+    <meta name="keywords" content="Network Engineer, Cybersecurity, DevOps, SDN, OSPF, Cisco, TryHackMe, HackTheBox" />
+    <meta name="author" content="Naxish" />
+    <meta name="theme-color" content="#0077b6" />
+    
+    <!-- Open Graph / Social Media -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Naxish | Network Engineer Portfolio" />
+    <meta property="og:description" content="Network Engineer and Security Enthusiast specializing in SDN, DevOps, and cybersecurity." />
+    <meta property="og:url" content="https://naxish.github.io" />
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Naxish | Network Engineer Portfolio" />
+    <meta name="twitter:description" content="Network Engineer and Security Enthusiast specializing in SDN, DevOps, and cybersecurity." />
+    
     <title>Naxish | Portfolio</title>
     <link rel="stylesheet" href="css/index.css" />
   </head>
@@ -10,17 +26,19 @@
     <header>
       <h1>Naxish</h1>
       <p>Network Engineer | Security Enthusiast | DevOps Enthusiast</p>
-      <div class="buttons">
-        <a href="https://tryhackme.com/p/Naxish" target="_blank" class="button"
+      <div class="buttons" role="navigation" aria-label="Profile links">
+        <a href="https://tryhackme.com/p/Naxish" target="_blank" rel="noopener noreferrer" class="button" aria-label="Visit my TryHackMe profile"
           >TryHackMe</a
         >
         <a
           href="https://app.hackthebox.com/profile/1349393"
           target="_blank"
+          rel="noopener noreferrer"
           class="button"
+          aria-label="Visit my HackTheBox profile"
           >HackTheBox</a
         >
-        <a href="https://github.com/Naxish-Dev" target="_blank" class="button"
+        <a href="https://github.com/Naxish-Dev" target="_blank" rel="noopener noreferrer" class="button" aria-label="Visit my GitHub profile"
           >GitHub</a
         >
       </div>
@@ -47,7 +65,7 @@
         <div class="project">
           <h3>Network Design visualization (WIP)</h3>
           <p>Web-based Network Designer</p>
-          <a href="/NetworkDesign.html" target="_blank" class="project-link"
+          <a href="/networkdesign.html" target="_blank" rel="noopener noreferrer" class="project-link" aria-label="Open Network Design tool"
             >Go to project</a
           >
         </div>
@@ -57,7 +75,7 @@
             Dynamic firewall implementation using Ryu Controller and Mininet for
             SDN networks.
           </p>
-          <a href="#" class="project-link">Go to project</a>
+          <a href="#" class="project-link" aria-label="View SDN Firewall project (coming soon)">Go to project</a>
         </div>
         <div class="project">
           <h3>High-Availability Cisco Network</h3>
@@ -65,15 +83,17 @@
             Redundant core/distribution network with OSPF, HSRP, VLANs and
             port-channels.
           </p>
-          <a href="#" class="project-link">Go to project</a>
+          <a href="#" class="project-link" aria-label="View High-Availability Network project (coming soon)">Go to project</a>
         </div>
       </div>
     </section>
 
-    <section class="skills">
-      <h2>Skills</h2>
-      <ul>
-        <li>Network Engineering (Cisco IOS, OSPF, VLAN, HSRP)</li>
+    <section class="skills" aria-labelledby="skills-heading">
+      <h2 id="skills-heading">Skills</h2>
+      <ul role="list">
+        <li class="info-box">
+          Network Engineering (Cisco IOS, OSPF, VLAN, HSRP)
+        </li>
         <li>Network DESIGN (hierarchical, Spine-Leaf)</li>
         <li>Security (TryHackMe, HackTheBox, Wireshark, Nmap)</li>
         <li>Programming (Python, HTML/CSS, JS)</li>
@@ -86,78 +106,42 @@
       </ul>
     </section>
 
-    <section class="blog">
-      <h2>Latest Writeups</h2>
-      <ul></ul>
+    <section class="blog" aria-labelledby="writeups-heading">
+      <h2 id="writeups-heading">Latest Writeups</h2>
+      <ul role="list" aria-label="List of latest writeups"></ul>
     </section>
 
-    <section class="skills">
-      <h2>Shoutouts</h2>
-      <ul>
-        <li>Kevin Wallace (Networking Cisco)</li>
-        <li>David Boombay (Networking & Security)</li>
-        <li>Networkchuck (Networking & Service fun)</li>
+    <section class="skills" aria-labelledby="shoutouts-heading">
+      <h2 id="shoutouts-heading">Shoutouts</h2>
+      <ul role="list">
+        <li class="clickable-box">
+          <a href="https://www.youtube.com/@kwallaceccie" target="_blank" rel="noopener noreferrer" aria-label="Kevin Wallace YouTube channel">
+            Kevin Wallace (Networking Cisco)
+          </a>
+        </li>
+        <li class="clickable-box">
+          <a href="https://www.youtube.com/@davidbombal" target="_blank" rel="noopener noreferrer" aria-label="David Bombal YouTube channel">
+            David Bombal (Networking & Security)
+          </a>
+        </li>
+        <li class="clickable-box">
+          <a href="https://www.youtube.com/@NetworkChuck" target="_blank" rel="noopener noreferrer" aria-label="NetworkChuck YouTube channel">
+            Networkchuck (Networking & Service fun)
+          </a>
+        </li>
       </ul>
     </section>
 
-    <footer>
+    <footer role="contentinfo">
       <p>&copy; 2025 Naxish. All rights reserved.</p>
-      <button id="changelogToggle" class="button">View Changelog</button>
+      <button id="changelogToggle" class="button" aria-label="Toggle changelog visibility" aria-expanded="false">View Changelog</button>
 
-      <div id="changelogContainer" class="changelog hidden">
-        <h3>Changelog</h3>
-        <pre id="changelogContent"></pre>
+      <div id="changelogContainer" class="changelog hidden" role="region" aria-labelledby="changelog-heading" aria-live="polite">
+        <h3 id="changelog-heading">Changelog</h3>
+        <pre id="changelogContent" aria-label="Changelog content"></pre>
       </div>
     </footer>
 
-    <script>
-      const toggleButton = document.getElementById("darkModeToggle");
-      const prefersDark = window.matchMedia(
-        "(prefers-color-scheme: dark)"
-      ).matches;
-
-      function updateButtonLabel() {
-        toggleButton.textContent = document.body.classList.contains("dark-mode")
-          ? "Light Mode"
-          : "Dark Mode";
-      }
-
-      if (
-        localStorage.getItem("theme") === "dark" ||
-        (!localStorage.getItem("theme") && prefersDark)
-      ) {
-        document.body.classList.add("dark-mode");
-      }
-      updateButtonLabel();
-
-      toggleButton.addEventListener("click", () => {
-        document.body.classList.toggle("dark-mode");
-        const mode = document.body.classList.contains("dark-mode")
-          ? "dark"
-          : "light";
-        localStorage.setItem("theme", mode);
-        updateButtonLabel();
-      });
-
-      // --- Changelog logic ---
-      const changelogToggle = document.getElementById("changelogToggle");
-      const changelogContainer = document.getElementById("changelogContainer");
-      const changelogContent = document.getElementById("changelogContent");
-
-      // Load changelog in background once on page load
-      fetch("changelog.txt")
-        .then((res) => res.text())
-        .then((text) => {
-          changelogContent.textContent = text;
-        })
-        .catch(() => {
-          changelogContent.textContent = "Changelog could not be loaded.";
-        });
-
-      // Toggle visibility only
-      changelogToggle.addEventListener("click", () => {
-        changelogContainer.classList.toggle("hidden");
-      });
-    </script>
+    <script src="js/main.js"></script>
   </body>
 </html>
