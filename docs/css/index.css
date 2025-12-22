@@ -223,12 +223,12 @@ body.dark-mode .changelog pre {
   .theme-toggle {
     top: 0.5rem;
     right: 0.5rem;
-    font-size: 0.65rem;
-    padding: 0.35rem 0.5rem;
+    font-size: 0.6rem;
+    padding: 0.35rem 0.45rem;
     border-radius: 10px;
     min-width: auto;
-    max-width: 85px;
-    max-height: 30px;
+    max-width: 72px;
+    max-height: 28px;
     white-space: nowrap;
     overflow: hidden;
     line-height: 1.2;
