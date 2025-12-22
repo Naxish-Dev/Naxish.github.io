@@ -10,6 +10,8 @@ header {
   color: white;
   text-align: center;
   padding: 3rem 1rem;
+  position: relative;
+  overflow-x: hidden;
 }
 
 header h1 {
@@ -26,6 +28,8 @@ header p {
 
 .buttons {
   margin-top: 1rem;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .button {
@@ -37,6 +41,8 @@ header p {
   border-radius: 5px;
   display: inline-block;
   transition: background-color 0.3s, transform 0.3s, box-shadow 0.3s;
+  box-sizing: border-box;
+  max-width: calc(100% - 1rem);
 }
 
 .button:hover {
@@ -217,11 +223,12 @@ body.dark-mode .changelog pre {
   .theme-toggle {
     top: 0.5rem;
     right: 0.5rem;
-    font-size: 0.7rem;
-    padding: 0.4rem 0.6rem;
-    border-radius: 12px;
-    max-width: 80px;
+    font-size: 0.65rem;
+    padding: 0.35rem 0.5rem;
+    border-radius: 10px;
+    min-width: auto;
     white-space: nowrap;
+    overflow: hidden;
   }
 
   .project-grid {
@@ -255,25 +262,29 @@ body.dark-mode .changelog pre {
 
 @media (max-width: 480px) {
   header {
-    padding: 2rem 0.75rem 1.5rem 0.75rem;
+    padding: 2.5rem 0.5rem 1.5rem 0.5rem;
   }
 
   header h1 {
-    font-size: 2rem;
+    font-size: 1.8rem;
   }
 
   header p {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
   }
 
   .buttons {
     max-width: 100%;
-    padding: 0 0.5rem;
+    padding: 0;
+    width: 100%;
   }
 
   .button {
-    font-size: 0.9rem;
-    padding: 0.65rem 1rem;
+    font-size: 0.85rem;
+    padding: 0.6rem 0.8rem;
+    margin: 0.25rem;
+    width: calc(100% - 0.5rem);
+    max-width: none;
   }
 
   .theme-toggle {
@@ -284,7 +295,8 @@ body.dark-mode .changelog pre {
     z-index: 1000;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     font-size: 0.65rem;
-    padding: 0.4rem 0.5rem;
+    padding: 0.4rem 0.6rem;
+    min-width: auto;
   }
 }
 
