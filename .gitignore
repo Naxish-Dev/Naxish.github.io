@@ -82,6 +82,9 @@ todo.txt
 notes.txt
 Notes.txt
 
+# PowerShell scripts
+*.ps1
+
 # Documentation (keep README.md only)
 *.md
 !README.md
