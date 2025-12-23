@@ -5,11 +5,3 @@
 - Make it able to click into a hypervisor and add VMs in there (Going to show up with a new empty workspace)
 once you leave it, it will show the previous workspace again (Creating this virtual enviorment and physical)
 - Edit colors on page to be more easy to see even with darker screens.
-
-[Front Page]
-
-- Increase shoutouts, updating skills
-- Creating writeups
-- Visualize the Dark Mode function abit more.
-- Consider new method for Changelog location and display?
-- Fix the mobile phone layout

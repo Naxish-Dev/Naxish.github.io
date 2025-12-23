@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Port Scanner - Naxish Games</title>
+    <link rel="stylesheet" href="../css/games/portscanner.css">
+</head>
+<body>
+    <div class="game-container">
+        <header>
+            <h1>Port Scanner</h1>
+            <p>Scan the network and find all vulnerable ports!</p>
+        </header>
+
+        <div id="startScreen" class="overlay">
+            <div class="overlay-content">
+                <h2>Port Scanner</h2>
+                <p>Use your network scanning skills to identify vulnerable services!</p>
+                
+                <div class="difficulty-select">
+                    <h3>Select Grid Size:</h3>
+                    <button class="difficulty-btn" data-level="easy">Easy (8x8 - 10 ports)</button>
+                    <button class="difficulty-btn" data-level="medium">Medium (10x10 - 15 ports)</button>
+                    <button class="difficulty-btn" data-level="hard">Hard (12x12 - 20 ports)</button>
+                </div>
+
+                <div class="instructions">
+                    <h3>How to Play:</h3>
+                    <ul>
+                        <li>Click cells to scan for open ports</li>
+                        <li>Numbers show adjacent vulnerable ports</li>
+                        <li>Right-click to flag suspected ports</li>
+                        <li>Find all open ports without clicking them</li>
+                        <li>Learn about common port numbers!</li>
+                    </ul>
+                    
+                    <div class="port-legend">
+                        <h4>Common Ports:</h4>
+                        <div class="legend-grid">
+                            <div>21 - FTP</div>
+                            <div>22 - SSH</div>
+                            <div>80 - HTTP</div>
+                            <div>443 - HTTPS</div>
+                            <div>3306 - MySQL</div>
+                            <div>3389 - RDP</div>
+                            <div>8080 - Web Proxy</div>
+                            <div>27017 - MongoDB</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="gameOverScreen" class="overlay hidden">
+            <div class="overlay-content">
+                <h2 id="resultTitle">Game Over!</h2>
+                <p id="resultMessage"></p>
+                <div class="stats">
+                    <div class="stat">
+                        <span class="stat-label">Time:</span>
+                        <span id="finalTime" class="stat-value"></span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Cells Scanned:</span>
+                        <span id="finalScans" class="stat-value"></span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Accuracy:</span>
+                        <span id="accuracy" class="stat-value"></span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Rating:</span>
+                        <span id="rating" class="stat-value"></span>
+                    </div>
+                </div>
+                <button id="restartBtn" class="btn btn-primary">Play Again</button>
+                <a href="../index.html" class="btn btn-secondary">Back to Portfolio</a>
+            </div>
+        </div>
+
+        <div id="gameUI" class="hidden">
+            <div class="game-stats">
+                <div class="stat-box">
+                    <span class="label">Time:</span>
+                    <span id="timer">00:00</span>
+                </div>
+                <div class="stat-box">
+                    <span class="label">Ports Found:</span>
+                    <span id="portsFound">0</span> / <span id="totalPorts">0</span>
+                </div>
+                <div class="stat-box">
+                    <span class="label">Cells Scanned:</span>
+                    <span id="scans">0</span>
+                </div>
+            </div>
+
+            <div class="port-info" id="portInfo">
+                <h3>Discovered Port:</h3>
+                <div id="portDetails" class="port-details">Click on cells to scan for open ports...</div>
+            </div>
+
+            <div class="grid-container">
+                <div id="grid"></div>
+            </div>
+
+            <div class="controls">
+                <p><strong>Controls:</strong> Left-click to scan | Right-click to flag</p>
+            </div>
+        </div>
+    </div>
+
+<script src="../js/utils/storage.js"></script>
+    <script src="../js/utils/ui.js"></script>
+    <script src="../js/config/constants.js"></script>
+    <script src="../js/games/portscanner.js"></script>
+</body>
+</html>

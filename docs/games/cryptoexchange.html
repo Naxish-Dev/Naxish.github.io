@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto Exchange - Naxish Games</title>
+    <link rel="stylesheet" href="../css/games/cryptoexchange.css">
+</head>
+<body>
+    <div class="game-container">
+        <header>
+            <h1>Crypto Exchange</h1>
+            <p>Trade cryptocurrencies and build your mining empire!</p>
+        </header>
+
+        <div id="startScreen" class="overlay">
+            <div class="overlay-content">
+                <h2>Crypto Exchange</h2>
+                <p>Buy low, sell high, and dominate the crypto market!</p>
+                
+                <div class="instructions">
+                    <h3>How to Play:</h3>
+                    <ul>
+                            <li>Start with $10,000 capital</li>
+                            <li>Trade 5 different cryptocurrencies</li>
+                            <li>Prices fluctuate based on market conditions</li>
+                            <li>Buy mining rigs to generate passive income</li>
+                            <li>React to market news and events</li>
+                            <li>Achieve investment milestones</li>
+                    <div class="crypto-info">
+                        <h4>Available Cryptocurrencies:</h4>
+                        <div class="crypto-list">
+                            <div>NaxCoin - The flagship crypto</div>
+                            <div>NetherToken - Smart contracts</div>
+                            <div>PacketChain - High speed blockchain</div>
+                            <div>RouterLink - Oracle network</div>
+                            <div>FlashCoin - Layer 2 solution</div>
+                        </div>
+                    </div>
+                </div>
+
+                <button id="startBtn" class="btn btn-primary">Start Trading</button>
+                <a href="../index.html" class="btn btn-secondary">Back to Portfolio</a>
+            </div>
+        </div>
+
+        <div id="gameUI" class="hidden">
+            <div class="top-bar">
+                <div class="wallet-info">
+                    <div class="stat-item">
+                        <span class="label">Cash:</span>
+                        <span id="cash" class="value">$10,000</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="label">Portfolio:</span>
+                        <span id="portfolioValue" class="value">$0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="label">Total Net Worth:</span>
+                        <span id="netWorth" class="value">$10,000</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="label">Profit/Loss:</span>
+                        <span id="profitLoss" class="value">$0</span>
+                    </div>
+                </div>
+                <button id="resetBtn" class="btn btn-danger">Reset Game</button>
+            </div>
+
+            <div class="news-banner" id="newsBanner"></div>
+
+            <div class="main-content">
+                <div class="trading-section">
+                    <h2>Trading Floor</h2>
+                    <div id="cryptoList" class="crypto-grid"></div>
+                </div>
+
+                <div class="sidebar">
+                    <div class="portfolio-section">
+                        <h3>Your Portfolio</h3>
+                        <div id="portfolioList" class="portfolio-items"></div>
+                    </div>
+
+                    <div class="mining-section">
+                        <h3>Mining Rigs</h3>
+                        <div id="miningList" class="mining-items"></div>
+                    </div>
+
+                    <div class="achievements-section">
+                        <h3>Achievements</h3>
+                        <div id="achievementsList" class="achievements-items"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tradeModal" class="modal hidden">
+            <div class="modal-content">
+                <h3 id="modalTitle">Trade</h3>
+                <div class="trade-info">
+                    <div class="price-display">
+                        <span class="label">Current Price:</span>
+                        <span id="modalPrice" class="price"></span>
+                    </div>
+                    <div class="balance-display">
+                        <span class="label">Your Balance:</span>
+                        <span id="modalBalance"></span>
+                    </div>
+                </div>
+                <div class="trade-controls">
+                    <input type="number" id="tradeAmount" placeholder="Amount" min="0" step="0.01">
+                    <div class="trade-buttons">
+                        <button id="buyBtn" class="btn btn-success">Buy</button>
+                        <button id="sellBtn" class="btn btn-danger">Sell</button>
+                        <button id="closeModalBtn" class="btn btn-secondary">Cancel</button>
+                    </div>
+                </div>
+                <div id="tradeError" class="error-message"></div>
+            </div>
+        </div>
+    </div>
+
+<script src="../js/utils/storage.js"></script>
+    <script src="../js/utils/ui.js"></script>
+    <script src="../js/utils/gameloop.js"></script>
+    <script src="../js/config/constants.js"></script>
+    <script src="../js/games/cryptoexchange.js"></script>
+</body>
+</html>

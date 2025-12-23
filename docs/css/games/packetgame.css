@@ -175,10 +175,6 @@ body.dark-mode .clicker-section {
   transform: scale(0.95);
 }
 
-.packet-icon {
-  font-size: 4rem;
-}
-
 .click-text {
   font-size: 1.1rem;
   font-weight: 600;
@@ -446,10 +442,6 @@ body.dark-mode .save-info {
   .click-button {
     width: 150px;
     height: 150px;
-  }
-
-  .packet-icon {
-    font-size: 3rem;
   }
 
   .achievements-grid {

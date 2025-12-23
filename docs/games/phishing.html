@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Phishing Hunter - Spot the fake emails!">
+    <title>Phishing Hunter | Naxish</title>
+    <link rel="stylesheet" href="../css/games/phishing.css">
+</head>
+<body>
+    <div class="game-wrapper">
+        <header class="game-header">
+            <h1>Phishing Hunter</h1>
+            <a href="../index.html" class="back-btn">← Back</a>
+        </header>
+
+        <div class="game-container">
+            <div class="game-ui">
+                <div class="stat">
+                    <span class="label">Score:</span>
+                    <span class="value" id="score">0</span>
+                </div>
+                <div class="stat">
+                    <span class="label">Streak:</span>
+                    <span class="value streak" id="streak">0</span>
+                </div>
+                <div class="stat">
+                    <span class="label">Round:</span>
+                    <span class="value" id="round">1/10</span>
+                </div>
+            </div>
+
+            <div class="email-container" id="emailContainer">
+                <!-- Email populated by JS -->
+            </div>
+
+            <div class="controls">
+                <button class="decision-btn safe" id="safeBtn">Legitimate</button>
+                <button class="decision-btn danger" id="phishingBtn">Phishing!</button>
+            </div>
+
+            <div class="feedback hidden" id="feedback">
+                <div class="feedback-content"></div>
+            </div>
+
+            <div class="game-overlay" id="startScreen">
+                <div class="overlay-content">
+                    <h2>Phishing Hunter</h2>
+                    <p>Can you spot phishing emails?</p>
+                    <div class="instructions">
+                        <h3>Look for red flags:</h3>
+                        <ul>
+                            <li>Suspicious sender addresses</li>
+                            <li>Urgent threats or rewards</li>
+                            <li>Grammar and spelling errors</li>
+                            <li>Suspicious links</li>
+                            <li>Requests for sensitive info</li>
+                        </ul>
+                        <p><strong>10 rounds. Can you catch them all?</strong></p>
+                    </div>
+                    <button class="game-btn" id="startBtn">Start Hunting</button>
+                </div>
+            </div>
+
+            <div class="game-overlay hidden" id="gameOverScreen">
+                <div class="overlay-content">
+                    <h2>Results</h2>
+                    <div class="final-stats">
+                        <p>Score: <span id="finalScore">0</span>/10</p>
+                        <p>Accuracy: <span id="accuracy">0%</span></p>
+                        <p id="rating">Rating</p>
+                    </div>
+                    <button class="game-btn" id="restartBtn">Play Again</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script src="../js/utils/storage.js"></script>
+    <script src="../js/utils/ui.js"></script>
+    <script src="../js/config/constants.js"></script>
+    <script src="../js/games/phishing.js"></script>
+</body>
+</html>

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL Injection Hunter | Security Game</title>
+    <link rel="stylesheet" href="../css/games/sqlhunter.css">
+</head>
+<body>
+    <div class="game-container">
+        <header class="game-header">
+            <h1>SQL Injection Hunter</h1>
+            <a href="../index.html" class="back-btn">← Back</a>
+        </header>
+
+        <div class="game-wrapper">
+            <div class="stats-bar">
+                <div class="stat">
+                    <span class="label">Score:</span>
+                    <span class="value" id="scoreValue">0</span>
+                </div>
+                <div class="stat">
+                    <span class="label">Combo</span>
+                    <span class="value combo" id="comboValue">x1</span>
+                </div>
+                <div class="stat">
+                    <span class="label">Time</span>
+                    <span class="value" id="timeValue">60</span>
+                </div>
+                <div class="stat">
+                    <span class="label">Level</span>
+                    <span class="value" id="levelValue">1</span>
+                </div>
+            </div>
+
+            <div class="game-area">
+                <div class="query-display" id="queryDisplay">
+                    <div class="query-label">Incoming Query:</div>
+                    <div class="query-text" id="queryText">SELECT * FROM users</div>
+                    <div class="query-timer-bar">
+                        <div class="query-timer-fill" id="queryTimerFill"></div>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="action-btn safe" id="safeBtn">Safe Query</button>
+                    <button class="action-btn danger" id="dangerBtn">Block Attack</button>
+                </div>
+
+                <div class="feedback hidden" id="feedback"></div>
+
+                <div class="stats-panel">
+                    <div class="stat-row">
+                        <span>Blocked:</span>
+                        <span id="blockedValue">0</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>Allowed</span>
+                        <span id="allowedValue">0</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>Accuracy</span>
+                        <span id="accuracyValue">100%</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="game-overlay" id="startScreen">
+                <div class="overlay-content">
+                    <h2>SQL Injection Hunter</h2>
+                    <p>Identify and block malicious SQL queries!</p>
+                    <div class="instructions">
+                        <h3>How to Play:</h3>
+                        <ul>
+                            <li>Read each SQL query carefully</li>
+                            <li>Decide if it's safe or a SQL injection attack</li>
+                            <li>Click "Safe Query" or "Block Attack"</li>
+                            <li>Build combos for consecutive correct answers</li>
+                            <li>The game gets faster as you level up!</li>
+                        </ul>
+                        <h4>Common SQL Injection Patterns:</h4>
+                        <ul>
+                            <li><strong>OR 1=1:</strong> Always true condition</li>
+                            <li><strong>UNION SELECT:</strong> Data extraction</li>
+                            <li><strong>DROP TABLE:</strong> Database destruction</li>
+                            <li><strong>--:</strong> Comment injection</li>
+                            <li><strong>' OR ''=':</strong> Authentication bypass</li>
+                        </ul>
+                    </div>
+                    <button class="game-btn" id="startBtn">Start Hunting</button>
+                </div>
+            </div>
+
+            <div class="game-overlay hidden" id="gameOverScreen">
+                <div class="overlay-content">
+                    <h2>Security Shift Complete!</h2>
+                    <div class="final-stats">
+                        <p>Final Score: <span id="finalScore">0</span></p>
+                        <p>Max Combo: <span id="finalCombo">x1</span></p>
+                        <p>Accuracy: <span id="finalAccuracy">0%</span></p>
+                        <p>Level Reached: <span id="finalLevel">1</span></p>
+                        <p>Rating: <span id="finalRating">-</span></p>
+                    </div>
+                    <button class="game-btn" id="restartBtn">Play Again</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script src="../js/utils/storage.js"></script>
+    <script src="../js/utils/ui.js"></script>
+    <script src="../js/utils/gameloop.js"></script>
+    <script src="../js/config/constants.js"></script>
+    <script src="../js/games/sqlhunter.js"></script>
+</body>
+</html>

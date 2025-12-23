@@ -1,18 +1,22 @@
 /**
- * Packet Collector - Network-themed Idle Game
+ * @fileoverview Packet Collector - Network-themed Idle/Clicker Game with upgrades and automation
+ * @author Naxish
  * Saves progress to localStorage
  */
 
-// Game State
+/**
+ * Main game state object
+ * @type {Object}
+ */
 const gameState = {
   packets: 0,
   totalPackets: 0,
   clickPower: 1,
   packetsPerSecond: 0,
   upgrades: {
-    click1: { level: 0, cost: 10, multiplier: 2 },
-    click2: { level: 0, cost: 100, multiplier: 5 },
-    click3: { level: 0, cost: 1000, multiplier: 10 },
+    click1: { level: 0, cost: 10, multiplier: 1.2 },
+    click2: { level: 0, cost: 100, multiplier: 1.6 },
+    click3: { level: 0, cost: 1000, multiplier: 2 },
   },
   automation: {
     router: { count: 0, cost: 50, production: 1 },
@@ -27,20 +31,20 @@ const gameState = {
 const upgrades = [
   {
     id: "click1",
-    name: "🖱️ Better Mouse",
-    description: "Double your click power",
+    name: "Better Mouse",
+    description: "1.2x click power per level",
     baseCost: 10,
   },
   {
     id: "click2",
-    name: "⚡ Overclocked NIC",
-    description: "5x click power",
+    name: "Overclocked NIC",
+    description: "1.6x click power per level",
     baseCost: 100,
   },
   {
     id: "click3",
-    name: "🚀 Quantum Clicks",
-    description: "10x click power",
+    name: "Quantum Clicks",
+    description: "2x click power per level",
     baseCost: 1000,
   },
 ];
@@ -49,28 +53,28 @@ const upgrades = [
 const automationItems = [
   {
     id: "router",
-    name: "🌐 Router",
+    name: "Router",
     description: "Generates 1 packet/sec",
     baseCost: 50,
     production: 1,
   },
   {
     id: "switch",
-    name: "🔀 Switch",
+    name: "Switch",
     description: "Generates 5 packets/sec",
     baseCost: 500,
     production: 5,
   },
   {
     id: "firewall",
-    name: "🔥 Firewall",
+    name: "Firewall",
     description: "Generates 25 packets/sec",
     baseCost: 5000,
     production: 25,
   },
   {
     id: "server",
-    name: "💻 Server Rack",
+    name: "Server Rack",
     description: "Generates 100 packets/sec",
     baseCost: 50000,
     production: 100,
@@ -118,7 +122,7 @@ function init() {
   elements.themeToggle.addEventListener("click", toggleTheme);
   elements.saveBtn.addEventListener("click", () => {
     saveGame();
-    alert("Game saved! 💾");
+    alert("Game saved!");
   });
   elements.resetBtn.addEventListener("click", resetGame);
 
@@ -130,7 +134,7 @@ function init() {
 
 // Handle Click
 function handleClick() {
-  const power = calculateClickPower();
+  const power = Math.floor(calculateClickPower()); // Floor when collecting
   gameState.packets += power;
   gameState.totalPackets += power;
 
@@ -144,16 +148,14 @@ function handleClick() {
 function calculateClickPower() {
   let power = gameState.clickPower;
   
-  // Apply upgrades additively (each level adds the multiplier, not multiplies)
+  // Apply upgrades multiplicatively
   Object.entries(gameState.upgrades).forEach(([id, upgrade]) => {
     if (upgrade.level > 0) {
-      // Each level adds (multiplier - 1) to the total multiplier
-      // e.g., 2x upgrade at level 3 = 1 + (2-1)*3 = 4x total
-      power += (upgrade.multiplier - 1) * upgrade.level;
+      power *= Math.pow(upgrade.multiplier, upgrade.level);
     }
   });
   
-  return Math.floor(power);
+  return power; // Return exact value with decimals
 }
 
 // Calculate Packets Per Second
@@ -190,7 +192,9 @@ function updateDisplay() {
 
 // Format Large Numbers
 function formatNumber(num) {
-  if (num < 1000) return num.toString();
+  if (num < 10) return num.toFixed(2); // Show 2 decimals for small numbers
+  if (num < 100) return num.toFixed(1); // Show 1 decimal for medium numbers
+  if (num < 1000) return Math.floor(num).toString();
   if (num < 1000000) return (num / 1000).toFixed(1) + "K";
   if (num < 1000000000) return (num / 1000000).toFixed(2) + "M";
   return (num / 1000000000).toFixed(2) + "B";
@@ -202,6 +206,11 @@ function renderUpgrades() {
     .map((upgrade) => {
       const state = gameState.upgrades[upgrade.id];
       const cost = Math.floor(upgrade.baseCost * Math.pow(1.5, state.level));
+      
+      // Prevent overflow
+      if (!isFinite(cost) || cost < 0) {
+        return '';
+      }
 
       return `
         <div class="upgrade-item">
@@ -233,6 +242,11 @@ function renderAutomation() {
     .map((item) => {
       const state = gameState.automation[item.id];
       const cost = Math.floor(item.baseCost * Math.pow(1.15, state.count));
+      
+      // Prevent overflow
+      if (!isFinite(cost) || cost < 0) {
+        return '';
+      }
 
       return `
         <div class="automation-item">
@@ -266,7 +280,7 @@ function renderAchievements() {
       const unlocked = gameState.achievements[achievement.id] || false;
       return `
         <div class="achievement-item ${unlocked ? "unlocked" : ""}">
-          <div class="achievement-icon">${unlocked ? "🏆" : "🔒"}</div>
+          <div class="achievement-status">${unlocked ? "Unlocked" : "Locked"}</div>
           <div class="achievement-name">${achievement.name}</div>
           <div class="achievement-desc">${achievement.desc}</div>
         </div>
@@ -349,7 +363,7 @@ function unlockAchievement(id) {
     // Show notification
     const achievement = achievements.find((a) => a.id === id);
     if (achievement) {
-      showNotification(`🏆 Achievement Unlocked: ${achievement.name}!`);
+      showNotification(`Achievement Unlocked: ${achievement.name}!`);
     }
   }
 }
@@ -384,8 +398,21 @@ function saveGame() {
 function loadGame() {
   const saved = localStorage.getItem("packetCollectorSave");
   if (saved) {
-    const loadedState = JSON.parse(saved);
-    Object.assign(gameState, loadedState);
+    try {
+      const loadedState = JSON.parse(saved);
+      // Validate data structure
+      if (loadedState && typeof loadedState === 'object' && 
+          typeof loadedState.packets === 'number' &&
+          typeof loadedState.totalPackets === 'number') {
+        Object.assign(gameState, loadedState);
+      } else {
+        console.warn('Invalid save data, starting fresh');
+        localStorage.removeItem("packetCollectorSave");
+      }
+    } catch (e) {
+      console.error('Failed to load save:', e);
+      localStorage.removeItem("packetCollectorSave");
+    }
   }
 }
 

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Packet Inspector - Click malicious packets before they escape!">
+    <title>Packet Inspector | Naxish</title>
+    <link rel="stylesheet" href="../css/games/packetinspector.css">
+</head>
+<body>
+    <div class="game-wrapper">
+        <header class="game-header">
+            <h1>Packet Inspector</h1>
+            <a href="../index.html" class="back-btn">← Back</a>
+        </header>
+
+        <div class="game-container">
+            <div class="game-ui">
+                <div class="stat">
+                    <span class="label">Score:</span>
+                    <span class="value" id="score">0</span>
+                </div>
+                <div class="stat">
+                    <span class="label">Combo:</span>
+                    <span class="value combo" id="combo">x1</span>
+                </div>
+                <div class="stat">
+                    <span class="label">Time:</span>
+                    <span class="value" id="timer">60</span>
+                </div>
+                <div class="stat">
+                    <span class="label">Lives:</span>
+                    <span class="value lives" id="lives">3</span>
+                </div>
+            </div>
+
+            <canvas id="gameCanvas"></canvas>
+
+            <div class="legend">
+                <div class="legend-item bad">Malicious (Click!)</div>
+                <div class="legend-item good">Legitimate (Avoid!)</div>
+            </div>
+
+            <div class="game-overlay" id="startScreen">
+                <div class="overlay-content">
+                    <h2>Packet Inspector</h2>
+                    <p>Click malicious packets, avoid legitimate ones!</p>
+                    <div class="instructions">
+                        <h3>How to Play:</h3>
+                        <p><strong>Malicious Packets (RED):</strong> Click them!</p>
+                        <p><strong>Legitimate Packets (GREEN):</strong> Don't click!</p>
+                        <p><strong>Combo:</strong> Hit consecutive malicious packets</p>
+                        <p><strong>Lives:</strong> Lose 1 for each mistake</p>
+                    </div>
+                    <button class="game-btn" id="startBtn">Start Hunting</button>
+                </div>
+            </div>
+
+            <div class="game-overlay hidden" id="gameOverScreen">
+                <div class="overlay-content">
+                    <h2 id="resultTitle">Game Over!</h2>
+                    <div class="final-stats">
+                        <p>Final Score: <span id="finalScore">0</span></p>
+                        <p>Max Combo: <span id="maxCombo">x1</span></p>
+                        <p>Accuracy: <span id="accuracy">0%</span></p>
+                    </div>
+                    <button class="game-btn" id="restartBtn">Play Again</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script src="../js/utils/storage.js"></script>
+    <script src="../js/utils/ui.js"></script>
+    <script src="../js/utils/gameloop.js"></script>
+    <script src="../js/config/constants.js"></script>
+    <script src="../js/games/packetinspector.js"></script>
+</body>
+</html>
