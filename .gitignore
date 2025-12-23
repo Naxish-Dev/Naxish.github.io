@@ -81,3 +81,14 @@ Todo.txt
 todo.txt
 notes.txt
 Notes.txt
+
+# Documentation (keep README.md only)
+*.md
+!README.md
+!.github/**/*.md
+CONTRIBUTING.md
+VERSION_CONTROL_SETUP.md
+SECURITY_REVIEW.md
+IMPROVEMENTS.md
+GAMES_SUMMARY.md
+GIT_WORKFLOW.md
