@@ -1,3 +1,6 @@
+2025-12-23
+- Update 2.1. * added small tweaks and hotfixes * updated security * updated the file structure * added jsdoc to the javascripts. * implemented some interatable games
+
 2025-12-22
 - Nolog
 - Link fix
