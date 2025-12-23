@@ -2,7 +2,7 @@
 
 Personal portfolio website for network engineering projects and interactive security games.
 
-**Live site**: [Nanxish.com](https://naxish.github.io)
+**Live site**: [Nanxish Portfolio](https://Nanxish.com)
 
 ## What's Here
 
