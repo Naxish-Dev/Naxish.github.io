@@ -1,7 +1,9 @@
 2025-12-23
+- Nolog
 - Update 2.1. * added small tweaks and hotfixes * updated security * updated the file structure * added jsdoc to the javascripts. * implemented some interatable games
 
 2025-12-22
+- Nolog
 - Link fix
 - Link update
 - Fix link to network design tool in index.html
@@ -11,6 +13,10 @@
 - Test: trigger ci/cd
 - Fix: ignore github pages url in link checker until site is deployed
 - Fixed critical issues, broken link, xss protection, seo .& meta tags, wcag 2.1 compliant. improved code quality, updated input validation. tweaks for user experiance. added readme and improvements documentation. created backups of old code.
+
+2025-11-17
+- Nolog
+- Todo
 
 2025-11-14
 - Hotfix changelog
