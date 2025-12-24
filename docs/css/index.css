@@ -153,6 +153,7 @@ footer .button {
   overflow-y: auto;
 }
 
+
 body.dark-mode .changelog {
   background-color: #161b22;
   border-color: #30363d;
@@ -480,7 +481,7 @@ body.dark-mode .about h2 {
 .skills li.clickable-box a:active {
   color: inherit;
 }
-
+/* OLD DARK MODE SKILL STYLES
 body.dark-mode .skills li {
   background: linear-gradient(135deg, #1f6feb, #0969da);
   color: #ffffff;
@@ -493,6 +494,20 @@ body.dark-mode .skills li:hover {
   box-shadow: 0 6px 12px rgba(88, 166, 255, 0.6);
   border-color: rgba(88, 166, 255, 0.5);
 }
+*/
+
+body.dark-mode .skills li {
+  background: linear-gradient(135deg, #0e7490, #0891b2);
+  color: #ffffff;
+  box-shadow: 0 4px 8px rgba(14, 116, 144, 0.4);
+  border: 1px solid rgba(8, 145, 178, 0.3);
+}
+
+body.dark-mode .skills li:hover {
+  background: linear-gradient(135deg, #0891b2, #06b6d4);
+  box-shadow: 0 6px 12px rgba(8, 145, 178, 0.6);
+  border-color: rgba(6, 182, 212, 0.5);
+}
 
 header {
   position: relative;
@@ -503,6 +518,13 @@ header {
   content: "Loading...";
   opacity: 0.6;
   font-style: italic;
+}
+/* Version info styling */
+#versionContent {
+  font-size: 0.8rem;
+  color: #888;
+  font-style: italic;
+  margin: 0.3rem 0;
 }
 
 /* Smooth transitions for interactive elements */
@@ -525,7 +547,7 @@ body.dark-mode *:focus-visible {
 /* Improved button accessibility */
 .button:focus,
 .theme-toggle:focus {
-  outline: 2px solid #ffd60a;
+  outline: 2px solid #58a6ff;
   outline-offset: 3px;
 }
 
