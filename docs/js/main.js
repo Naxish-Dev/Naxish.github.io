@@ -96,7 +96,7 @@ function loadVersion() {
       return response.text();
     })
     .then((text) => {
-      versionContent.textContent = "Version: " + text || "Version info not available.";
+      versionContent.textContent = text.trim() ? "Version: " + text.trim() : "Version info not available.";
     })
     .catch((error) => {
       console.error("Failed to load version info:", error);
