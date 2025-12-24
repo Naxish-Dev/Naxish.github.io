@@ -93,10 +93,10 @@ function loadVersion() {
       if (!response.ok) { 
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      return "Version: " + response.text();
+      return response.text();
     })
     .then((text) => {
-      versionContent.textContent = text || "Version info not available.";
+      versionContent.textContent = "Version: " + text || "Version info not available.";
     })
     .catch((error) => {
       console.error("Failed to load version info:", error);
