@@ -53,6 +53,7 @@ if (toggleButton) {
 const changelogToggle = document.getElementById("changelogToggle");
 const changelogContainer = document.getElementById("changelogContainer");
 const changelogContent = document.getElementById("changelogContent");
+const versionContent = document.getElementById("versionContent");
 
 /**
  * Loads the changelog from the server
@@ -80,6 +81,30 @@ function loadChangelog() {
 }
 
 /**
+ * Loads the version info from the server
+ */
+function loadVersion() {
+  if (!versionContent) return;
+
+  // Show loading state
+  versionContent.textContent = "Loading version...";
+  fetch("VERSION")
+    .then((response) => {
+      if (!response.ok) { 
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.text();
+    })
+    .then((text) => {
+      versionContent.textContent = text || "Version info not available.";
+    })
+    .catch((error) => {
+      console.error("Failed to load version info:", error);
+      versionContent.textContent = "Version info could not be loaded.";
+    }); 
+}
+
+/**
  * Toggles changelog visibility
  */
 function toggleChangelog() {
@@ -91,6 +116,11 @@ function toggleChangelog() {
 // Load changelog on page load
 if (changelogContent) {
   loadChangelog();
+}
+
+// Load version info on page load
+if (versionContent) {
+  loadVersion();
 }
 
 // Attach toggle event listener
