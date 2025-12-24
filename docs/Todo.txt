@@ -3,5 +3,5 @@
 - menu for buttons (maybe add a right click function to the workspace)
 - Hypervisor Device
 - Make it able to click into a hypervisor and add VMs in there (Going to show up with a new empty workspace)
-once you leave it, it will show the previous workspace again (Creating this virtual enviorment and physical)
+once you leave it, it will show the previous workspace again (Creating this virtual enviorment and physical enviroment)
 - Edit colors on page to be more easy to see even with darker screens.
