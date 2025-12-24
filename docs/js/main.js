@@ -93,7 +93,7 @@ function loadVersion() {
       if (!response.ok) { 
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      return response.text();
+      return "Version: " + response.text();
     })
     .then((text) => {
       versionContent.textContent = text || "Version info not available.";

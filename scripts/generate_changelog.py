@@ -3,6 +3,7 @@ import subprocess
 from collections import defaultdict
 from datetime import datetime
 import os
+import shutil
 
 # Patterns we consider "noise" and skip in the changelog
 SKIP_PREFIXES = [
@@ -128,11 +129,22 @@ def main():
     docs_dir = os.path.join(repo_root, "docs")
     os.makedirs(docs_dir, exist_ok=True)
 
+    # Write changelog
     out_path = os.path.join(docs_dir, "changelog.txt")
     with open(out_path, "w", encoding="utf-8") as f:
         f.write(changelog)
 
     print("Generated docs/changelog.txt")
+
+    # Copy VERSION file from root to docs
+    version_src = os.path.join(repo_root, "VERSION")
+    version_dst = os.path.join(docs_dir, "VERSION")
+    
+    if os.path.exists(version_src):
+        shutil.copy2(version_src, version_dst)
+        print("Copied VERSION to docs/VERSION")
+    else:
+        print("Warning: VERSION file not found in root directory")
 
 
 if __name__ == "__main__":
