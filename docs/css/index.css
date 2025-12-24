@@ -26,6 +26,34 @@ header p {
   text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.2);
 }
 
+/* Profile picture styling */
+.profile-pic {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  border: 5px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  margin: 0 auto 1.5rem auto;
+  display: block;
+  object-fit: cover;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.profile-pic:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Dark mode profile picture styling */
+body.dark-mode .profile-pic {
+  border-color: rgba(88, 166, 255, 0.4);
+  box-shadow: 0 4px 16px rgba(88, 166, 255, 0.2);
+}
+
+body.dark-mode .profile-pic:hover {
+  box-shadow: 0 6px 20px rgba(88, 166, 255, 0.4);
+}
+
 .buttons {
   margin-top: 1rem;
   max-width: 100%;
