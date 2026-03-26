@@ -27,10 +27,32 @@
     <link rel="stylesheet" href="css/index.css" />
   </head>
   <body>
+    <!-- Music Player Bar -->
+    <div class="music-player-bar">
+      <div class="music-player-content">
+        <button id="prevBtn" class="player-btn" aria-label="Previous song">⏮</button>
+        <button id="playPauseBtn" class="player-btn" aria-label="Play/Pause music">
+          <span class="play-icon">▶</span>
+          <span class="pause-icon" style="display: none;">⏸</span>
+        </button>
+        <button id="nextBtn" class="player-btn" aria-label="Next song">⏭</button>
+        <div class="music-info">
+          <span id="songTitle" class="song-title">Loading...</span>
+          <div class="progress-bar">
+            <div id="progressFill" class="progress-fill"></div>
+          </div>
+        </div>
+        <div class="volume-control">
+          <span class="volume-icon">🔊</span>
+          <input type="range" id="volumeSlider" class="volume-slider" min="0" max="100" value="70" aria-label="Volume control">
+        </div>
+      </div>
+    </div>
+
     <header>
       <img src="images/logos/logo.png" alt="Naxish Profile Picture" class="profile-pic">
       <!-- <h1>Naxish</h1>  This is commented out, as I prefer to use the logo image instead (for now) -->
-      <p>Network Engineer | Security Enthusiast | DevOps Enthusiast</p>
+      <p>Network Engineer | Security Analyst | DevOps Enthusiast</p>
       <div class="buttons" role="navigation" aria-label="Profile links">
         <a href="https://tryhackme.com/p/Naxish" target="_blank" rel="noopener noreferrer" class="button" aria-label="Visit my TryHackMe profile"
           >TryHackMe</a
@@ -46,6 +68,8 @@
         <a href="https://github.com/Naxish-Dev" target="_blank" rel="noopener noreferrer" class="button" aria-label="Visit my GitHub profile"
           >GitHub</a
         >
+        <a href="https://kc7cyber.com/profile/923cf7a5" target="_blank" rel="noopener noreferrer" class="button" aria-label="Visit my LinkedIn profile"
+          >Kc7cyber</a
       </div>
       <button
         id="darkModeToggle"
@@ -57,11 +81,15 @@
     <section class="about">
       <h2>About Me</h2>
       <p>
-        I'm a passionate network engineer with a strong interest in
+        I'm a passionate network engineer and Security Analyst with a strong interest in
         cybersecurity and DevOps. I enjoy building secure infrastructure and
         tools that bridge networks and applications. Currently expanding my
-        skills in SDN and automation.
+        skills in SDN, cloud networking, automation, Threat Hunting, and incident response. Always eager to learn
+        and take on new challenges in the world of networking and security!
       </p>
+      <div class="about-image-container">
+        <img src="images/me.png" alt="Me" class="about-image">
+      </div>
     </section>
 
     <section class="projects">

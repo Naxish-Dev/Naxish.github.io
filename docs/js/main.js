@@ -49,6 +49,183 @@ if (toggleButton) {
   toggleButton.addEventListener("click", toggleDarkMode);
 }
 
+// ===== MUSIC PLAYER =====
+const audioPlayer = new Audio();
+const playPauseBtn = document.getElementById("playPauseBtn");
+const prevBtn = document.getElementById("prevBtn");
+const nextBtn = document.getElementById("nextBtn");
+const songTitle = document.getElementById("songTitle");
+const volumeSlider = document.getElementById("volumeSlider");
+const progressFill = document.getElementById("progressFill");
+const progressBar = document.querySelector(".progress-bar");
+
+// List of songs to play (populated from songs.json)
+let songs = [];
+
+let currentSongIndex = 0;
+let isPlaying = false;
+let updateScheduled = false;
+
+/**
+ * Loads songs from the songs.json file
+ */
+async function loadSongsFromJSON() {
+  try {
+    const response = await fetch("audio/lo-fi/songs.json");
+    if (!response.ok) {
+      throw new Error(`Failed to load songs.json: ${response.status}`);
+    }
+    const data = await response.json();
+    
+    // Convert relative paths to full paths
+    songs = data.songs.map(song => `audio/lo-fi/${song}`);
+    
+    // Initialize player after songs are loaded
+    initializePlayer();
+  } catch (error) {
+    console.error("Error loading songs:", error);
+    songTitle.textContent = "Error loading songs";
+  }
+}
+
+/**
+ * Initializes the music player after songs are loaded
+ */
+function initializePlayer() {
+  if (songs.length > 0) {
+    loadSong(0);
+    audioPlayer.volume = 0.7;
+  }
+}
+
+/**
+ * Gets a random song index that's different from the current one
+ */
+function getRandomSongIndex() {
+  let newIndex = currentSongIndex;
+  while (newIndex === currentSongIndex && songs.length > 1) {
+    newIndex = Math.floor(Math.random() * songs.length);
+  }
+  return newIndex;
+}
+
+/**
+ * Loads a song by index
+ */
+function loadSong(index) {
+  currentSongIndex = index;
+  audioPlayer.src = songs[index];
+  
+  // Extract song name from filename
+  const fileName = songs[index].split("/").pop();
+  const cleanName = fileName.replace(".mp3", "");
+  songTitle.textContent = cleanName;
+}
+
+/**
+ * Toggles play/pause
+ */
+function togglePlayPause() {
+  if (isPlaying) {
+    audioPlayer.pause();
+    playPauseBtn.querySelector(".play-icon").style.display = "inline";
+    playPauseBtn.querySelector(".pause-icon").style.display = "none";
+    isPlaying = false;
+  } else {
+    audioPlayer.play();
+    playPauseBtn.querySelector(".play-icon").style.display = "none";
+    playPauseBtn.querySelector(".pause-icon").style.display = "inline";
+    isPlaying = true;
+  }
+}
+
+/**
+ * Uses requestAnimationFrame to throttle repaints
+ */
+function updateProgress() {
+  if (audioPlayer.duration) {
+    const percent = (audioPlayer.currentTime / audioPlayer.duration) * 100;
+    progressFill.style.width = percent + "%";
+  }
+  updateScheduled = false;
+}
+
+/**
+ * Schedules progress bar update on next animation frame
+ * Prevents excessive repaints from frequent timeupdate events
+ */
+function scheduleProgressUpdate() {
+  if (!updateScheduled) {
+    updateScheduled = true;
+    requestAnimationFrame(updateProgress);
+  }
+}
+
+/**
+ * Seeks to a position on clicking the progress bar
+ */
+function seekSong(e) {
+  const rect = progressBar.getBoundingClientRect();
+  const percent = (e.clientX - rect.left) / rect.width;
+  audioPlayer.currentTime = percent * audioPlayer.duration;
+}
+
+/**
+ * Loads next song and plays it
+ */
+function playNextSong() {
+  currentSongIndex = getRandomSongIndex();
+  loadSong(currentSongIndex);
+  if (isPlaying) {
+    audioPlayer.play();
+  }
+}
+
+/**
+ * Go to previous song
+ */
+function playPreviousSong() {
+  // If more than 3 seconds into song, restart current song
+  if (audioPlayer.currentTime > 3) {
+    audioPlayer.currentTime = 0;
+  } else {
+    // Otherwise, go to previous song by cycling through
+    currentSongIndex = (currentSongIndex - 1 + songs.length) % songs.length;
+    loadSong(currentSongIndex);
+  }
+  if (isPlaying) {
+    audioPlayer.play();
+  }
+}
+
+/**
+ * Skip to next song
+ */
+function skipToNextSong() {
+  currentSongIndex = getRandomSongIndex();
+  loadSong(currentSongIndex);
+  if (isPlaying) {
+    audioPlayer.play();
+  }
+}
+
+// Load songs from JSON file on page load
+loadSongsFromJSON();
+
+// Event listeners
+playPauseBtn.addEventListener("click", togglePlayPause);
+prevBtn.addEventListener("click", playPreviousSong);
+nextBtn.addEventListener("click", skipToNextSong);
+volumeSlider.addEventListener("input", (e) => {
+  audioPlayer.volume = e.target.value / 100;
+});
+progressBar.addEventListener("click", seekSong);
+audioPlayer.addEventListener("timeupdate", scheduleProgressUpdate);
+audioPlayer.addEventListener("ended", playNextSong);
+
+// Optional: Start playing automatically (comment out if you prefer manual start)
+// togglePlayPause();
+
 // ===== CHANGELOG FUNCTIONALITY =====
 const changelogToggle = document.getElementById("changelogToggle");
 const changelogContainer = document.getElementById("changelogContainer");

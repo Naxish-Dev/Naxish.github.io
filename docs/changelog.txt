@@ -1,3 +1,13 @@
+2026-03-26
+- Added music player
+- Added picture to about me
+- Cleaned up codebase
+- Fixed a few minior bugs
+- Updated a few security flaws
+- Updated comments to be more direct and short.
+- Updated my cyber security info
+
+
 2025-12-23
 - Verison update 2.1 
 - added small tweaks and hotfixes 

@@ -5,6 +5,153 @@ body {
   color: #333;
 }
 
+/* ===== MUSIC PLAYER BAR ===== */
+.music-player-bar {
+  background: linear-gradient(90deg, #023e8a, #0077b6);
+  color: white;
+  padding: 0.75rem 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.music-player-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.player-btn {
+  background-color: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.player-btn:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+
+.player-btn:active {
+  transform: scale(0.95);
+}
+
+.music-info {
+  flex: 1;
+  min-width: 150px;
+}
+
+.song-title {
+  display: block;
+  font-size: 0.9rem;
+  margin-bottom: 0.35rem;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 4px;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background-color: #00b4d8;
+  width: 0%;
+  transition: width 0.1s linear;
+}
+
+.volume-control {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.volume-icon {
+  font-size: 1.1rem;
+}
+
+.volume-slider {
+  width: 100px;
+  height: 4px;
+  cursor: pointer;
+  accent-color: #00b4d8;
+}
+
+/* Dark mode music player */
+body.dark-mode .music-player-bar {
+  background: linear-gradient(90deg, #0d1117, #161b22);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+body.dark-mode .player-btn {
+  background-color: rgba(88, 166, 255, 0.2);
+  color: #58a6ff;
+}
+
+body.dark-mode .player-btn:hover {
+  background-color: rgba(88, 166, 255, 0.3);
+}
+
+/* Responsive design for music player */
+@media (max-width: 768px) {
+  .music-player-content {
+    gap: 0.75rem;
+  }
+
+  .volume-slider {
+    width: 80px;
+  }
+
+  .song-title {
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .music-player-bar {
+    padding: 0.5rem;
+  }
+
+  .music-player-content {
+    gap: 0.5rem;
+  }
+
+  .volume-control {
+    gap: 0.25rem;
+  }
+
+  .volume-slider {
+    width: 60px;
+  }
+
+  .player-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 1rem;
+  }
+}
+
 header {
   background: linear-gradient(135deg, #0077b6, #00b4d8);
   color: white;
@@ -442,6 +589,27 @@ body.dark-mode .theme-toggle:hover {
   max-width: 800px;
   margin: auto;
   color: #333;
+}
+
+.about-image-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 2rem;
+}
+
+.about-image {
+  max-width: 400px;
+  width: 100%;
+  height: auto;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  object-fit: cover;
+}
+
+.about-image:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
 }
 
 body.dark-mode .about p,
