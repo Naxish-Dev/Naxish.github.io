@@ -1,0 +1,378 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Courier New', monospace;
+    background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+    color: #e0e6ff;
+    overflow-x: hidden;
+    min-height: 100vh;
+}
+
+/* Animated grid background */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: 
+        linear-gradient(0deg, transparent 24%, rgba(0, 255, 200, .05) 25%, rgba(0, 255, 200, .05) 26%, transparent 27%, transparent 74%, rgba(0, 255, 200, .05) 75%, rgba(0, 255, 200, .05) 76%, transparent 77%, transparent),
+        linear-gradient(90deg, transparent 24%, rgba(0, 255, 200, .05) 25%, rgba(0, 255, 200, .05) 26%, transparent 27%, transparent 74%, rgba(0, 255, 200, .05) 75%, rgba(0, 255, 200, .05) 76%, transparent 77%, transparent);
+    background-size: 50px 50px;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.container {
+    position: relative;
+    z-index: 1;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 40px 20px;
+}
+
+/* Hero Section */
+.hero {
+    text-align: center;
+    margin-bottom: 40px;
+    animation: fadeInDown 0.8s ease;
+}
+
+.hero h1 {
+    font-size: 3em;
+    margin-bottom: 10px;
+    text-shadow: 0 0 20px rgba(0, 255, 200, 0.5);
+    color: #00ffc8;
+}
+
+.hero p {
+    font-size: 1.2em;
+    color: #00d9ff;
+    margin-bottom: 20px;
+}
+
+.status-indicator {
+    display: inline-block;
+    position: relative;
+    padding: 10px 20px;
+    border: 2px solid #00ffc8;
+    border-radius: 50px;
+    background: rgba(0, 255, 200, 0.1);
+    font-size: 0.9em;
+}
+
+.status-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background: #00ff88;
+    border-radius: 50%;
+    margin-right: 8px;
+    animation: pulse 2s infinite;
+}
+
+/* Main Grid */
+.dashboard {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.threat-card {
+    background: rgba(15, 30, 60, 0.6);
+    border: 2px solid #00ffc8;
+    border-radius: 10px;
+    padding: 20px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 32px rgba(0, 255, 200, 0.1);
+    animation: fadeInUp 0.8s ease;
+}
+
+.threat-card h3 {
+    color: #00d9ff;
+    font-size: 0.9em;
+    margin-bottom: 15px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.threat-value {
+    font-size: 2.5em;
+    font-weight: bold;
+    color: #00ffc8;
+    margin-bottom: 10px;
+    text-shadow: 0 0 10px rgba(0, 255, 200, 0.5);
+}
+
+.threat-label {
+    font-size: 0.85em;
+    color: #a0a6ff;
+    margin-bottom: 10px;
+}
+
+.threat-bar {
+    width: 100%;
+    height: 8px;
+    background: rgba(0, 255, 200, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 10px;
+}
+
+.threat-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #00d9ff, #00ffc8);
+    width: 0;
+    transition: width 0.3s ease;
+    box-shadow: 0 0 10px #00ffc8;
+}
+
+/* Alert Feed Section */
+.section-title {
+    color: #00ffc8;
+    font-size: 1.3em;
+    margin: 30px 0 15px 0;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    text-shadow: 0 0 10px rgba(0, 255, 200, 0.3);
+}
+
+.alert-feed {
+    background: rgba(15, 30, 60, 0.6);
+    border: 2px solid #00ffc8;
+    border-radius: 10px;
+    padding: 20px;
+    backdrop-filter: blur(10px);
+    height: 350px;
+    overflow-y: auto;
+    margin-bottom: 30px;
+}
+
+.alert {
+    padding: 12px;
+    margin-bottom: 10px;
+    border-left: 4px solid #00d9ff;
+    background: rgba(0, 217, 255, 0.05);
+    border-radius: 4px;
+    font-size: 0.9em;
+    animation: slideInRight 0.4s ease;
+}
+
+.alert.warning {
+    border-left-color: #ffaa00;
+    background: rgba(255, 170, 0, 0.05);
+}
+
+.alert.critical {
+    border-left-color: #ff1744;
+    background: rgba(255, 23, 68, 0.05);
+    text-shadow: 0 0 5px rgba(255, 23, 68, 0.3);
+}
+
+.alert-time {
+    color: #00ffc8;
+    font-size: 0.8em;
+    opacity: 0.7;
+}
+
+.alert-message {
+    color: #e0e6ff;
+    margin-top: 5px;
+}
+
+/* Terminal Section */
+.terminal-panel {
+    background: rgba(10, 20, 40, 0.8);
+    border: 2px solid #00ff88;
+    border-radius: 10px;
+    padding: 15px;
+    font-size: 0.85em;
+    height: 250px;
+    overflow-y: auto;
+    margin-bottom: 30px;
+    font-family: 'Courier New', monospace;
+}
+
+.terminal-line {
+    color: #00ff88;
+    margin: 5px 0;
+    animation: fadeIn 0.3s ease;
+}
+
+.terminal-line.error {
+    color: #ff1744;
+}
+
+.terminal-line.warning {
+    color: #ffaa00;
+}
+
+.terminal-prompt::before {
+    content: '$ ';
+    color: #00ffc8;
+    margin-right: 5px;
+}
+
+/* Scenario Buttons */
+.scenario-buttons {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.scenario-btn {
+    padding: 15px 20px;
+    background: linear-gradient(135deg, rgba(0, 217, 255, 0.2), rgba(0, 255, 200, 0.2));
+    border: 2px solid #00ffc8;
+    color: #00ffc8;
+    font-family: 'Courier New', monospace;
+    font-size: 0.95em;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: bold;
+    position: relative;
+    overflow: hidden;
+}
+
+.scenario-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.scenario-btn:hover {
+    background: linear-gradient(135deg, rgba(0, 217, 255, 0.4), rgba(0, 255, 200, 0.4));
+    box-shadow: 0 0 20px rgba(0, 255, 200, 0.5);
+    transform: translateY(-2px);
+}
+
+.scenario-btn:hover::before {
+    left: 100%;
+}
+
+.scenario-btn.active {
+    background: linear-gradient(135deg, #00d9ff, #00ffc8);
+    color: #0a0e27;
+    box-shadow: 0 0 30px rgba(0, 255, 200, 0.8);
+}
+
+.scenario-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Animations */
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes glow {
+    0%, 100% {
+        text-shadow: 0 0 10px rgba(0, 255, 200, 0.5);
+    }
+    50% {
+        text-shadow: 0 0 20px rgba(0, 255, 200, 0.8);
+    }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(0, 255, 200, 0.05);
+}
+
+::-webkit-scrollbar-thumb {
+    background: #00ffc8;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #00ff88;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .dashboard {
+        grid-template-columns: 1fr 1fr;
+    }
+    .hero h1 {
+        font-size: 2em;
+    }
+}
+
+@media (max-width: 768px) {
+    .dashboard {
+        grid-template-columns: 1fr;
+    }
+    .scenario-buttons {
+        grid-template-columns: 1fr;
+    }
+    .hero h1 {
+        font-size: 1.5em;
+    }
+}
