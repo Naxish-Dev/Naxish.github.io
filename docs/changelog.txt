@@ -6,6 +6,7 @@
 - Updated a few security flaws
 - Updated comments to be more direct and short.
 - Updated my cyber security info
+- Added new project called Cyber Dashboard
 
 
 2025-12-23
