@@ -7,7 +7,7 @@
  * @version 1.0
  *
  * Features:
- * - Fetches RSS via rss2json.com with allorigins, codetabs, and htmldriven fallbacks
+ * - Fetches RSS via codetabs (primary), corsproxy.io (fallback), rss2json (last resort)
  * - Filter by category (Security / Tech / All)
  * - Full-text search across titles, snippets and sources
  * - Sort by newest or by source
@@ -26,7 +26,7 @@ const FEEDS = [
   { name: 'SANS ISC',          url: 'https://isc.sans.edu/rssfeed.xml',                 category: 'security', color: '#eccc68' }, // rssfeed_full.xml too large, causes proxy timeouts
   { name: 'Ars Technica',      url: 'https://feeds.arstechnica.com/arstechnica/index',  category: 'tech',     color: '#00d4ff' },
   { name: 'TechCrunch',        url: 'https://techcrunch.com/feed/',                     category: 'tech',     color: '#2ed573' },
-  { name: 'Wired',             url: 'https://www.wired.com/feed/rss',                   category: 'tech',     color: '#a78bfa' }, // The Verge blocked by rss2json (422)
+  { name: 'Hacker News',       url: 'https://news.ycombinator.com/rss',                category: 'tech',     color: '#a78bfa' }, // Wired blocked by codetabs (empty response)
 ];
 
 // ===== STATE =====
@@ -115,29 +115,6 @@ function timeout(ms) {
   return { signal: ctrl.signal, clear: () => clearTimeout(id) };
 }
 
-// Strategy 1: rss2json.com (JSON, no XML parsing needed)
-async function fetchViaRss2Json(feed) {
-  const t   = timeout(8000);
-  const url = `${RSS2JSON}?rss_url=${encodeURIComponent(feed.url)}&count=12`;
-  try {
-    const res  = await fetch(url, { signal: t.signal });
-    t.clear();
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const json = await res.json();
-    if (json.status !== 'ok') throw new Error(json.message || 'rss2json error');
-    return {
-      source: feed.name, category: feed.category, color: feed.color,
-      items: json.items.map((item) => ({
-        title:      item.title || 'Untitled',
-        link:       item.link  || '#',
-        pubDate:    item.pubDate || null,
-        snippet:    stripHtml(item.description || item.content || '').slice(0, 220),
-        categories: Array.isArray(item.categories) ? item.categories.slice(0, 3) : [],
-      })),
-    };
-  } finally { t.clear(); }
-}
-
 // Shared: parse raw RSS/Atom XML string into items array
 function parseXml(xml, feed) {
   const doc    = new DOMParser().parseFromString(xml, 'text/xml');
@@ -160,20 +137,7 @@ function parseXml(xml, feed) {
   return { source: feed.name, category: feed.category, color: feed.color, items };
 }
 
-// Strategy 2: allorigins.win raw endpoint — returns content directly, no JSON wrapper
-async function fetchViaAllOrigins(feed) {
-  const t   = timeout(12000);
-  const url = `https://api.allorigins.win/raw?url=${encodeURIComponent(feed.url)}`;
-  try {
-    const res = await fetch(url, { signal: t.signal });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const xml = await res.text();
-    if (!xml || xml.trim().length < 50) throw new Error('Empty response');
-    return parseXml(xml, feed);
-  } finally { t.clear(); }
-}
-
-// Strategy 3: codetabs.com — reliable public CORS proxy
+// Strategy 1: codetabs.com — primary CORS proxy (most reliable from GitHub Pages)
 async function fetchViaCodetabs(feed) {
   const t   = timeout(12000);
   const url = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(feed.url)}`;
@@ -186,10 +150,10 @@ async function fetchViaCodetabs(feed) {
   } finally { t.clear(); }
 }
 
-// Strategy 4: htmldriven CORS proxy — final fallback
-async function fetchViaHtmldriven(feed) {
+// Strategy 2: corsproxy.io — secondary fallback
+async function fetchViaCorsproxy(feed) {
   const t   = timeout(12000);
-  const url = `https://cors-proxy.htmldriven.com/?url=${encodeURIComponent(feed.url)}`;
+  const url = `https://corsproxy.io/?url=${encodeURIComponent(feed.url)}`;
   try {
     const res = await fetch(url, { signal: t.signal });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -199,15 +163,36 @@ async function fetchViaHtmldriven(feed) {
   } finally { t.clear(); }
 }
 
-// Try all four proxies in sequence
+// Strategy 3: rss2json.com — last resort (rate-limited on free tier; works for FeedBurner feeds)
+async function fetchViaRss2Json(feed) {
+  const t   = timeout(8000);
+  const url = `${RSS2JSON}?rss_url=${encodeURIComponent(feed.url)}&count=12`;
+  try {
+    const res  = await fetch(url, { signal: t.signal });
+    t.clear();
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json();
+    if (json.status !== 'ok') throw new Error(json.message || 'rss2json error');
+    return {
+      source: feed.name, category: feed.category, color: feed.color,
+      items: json.items.map((item) => ({
+        title:      item.title || 'Untitled',
+        link:       item.link  || '#',
+        pubDate:    item.pubDate || null,
+        snippet:    stripHtml(item.description || item.content || '').slice(0, 220),
+        categories: Array.isArray(item.categories) ? item.categories.slice(0, 3) : [],
+      })),
+    };
+  } finally { t.clear(); }
+}
+
+// Try all three strategies in sequence
 async function fetchFeed(feed) {
-  try { return await fetchViaRss2Json(feed); }
-  catch (e1) { console.warn(`[rss2json]    ${feed.name}: ${e1.message}`); }
-  try { return await fetchViaAllOrigins(feed); }
-  catch (e2) { console.warn(`[allorigins]  ${feed.name}: ${e2.message}`); }
   try { return await fetchViaCodetabs(feed); }
-  catch (e3) { console.warn(`[codetabs]    ${feed.name}: ${e3.message}`); }
-  return await fetchViaHtmldriven(feed); // throws if this also fails
+  catch (e1) { console.warn(`[codetabs]   ${feed.name}: ${e1.message}`); }
+  try { return await fetchViaCorsproxy(feed); }
+  catch (e2) { console.warn(`[corsproxy]  ${feed.name}: ${e2.message}`); }
+  return await fetchViaRss2Json(feed); // throws if this also fails
 }
 
 // ===== LOAD ALL FEEDS =====
