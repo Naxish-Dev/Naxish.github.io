@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Live RSS news dashboard aggregating cybersecurity and tech feeds from The Hacker News, Krebs on Security, Ars Technica, and more." />
+  <meta name="keywords" content="CyberFeed, RSS, Cybersecurity News, Tech News, Security Intelligence, Feed Aggregator" />
+  <meta name="author" content="Naxish" />
+  <title>CyberFeed | Naxish</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="../images/favicon/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="../images/favicon/favicon-16x16.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/projects/cyberfeed.css" />
+</head>
+<body>
+
+  <!-- Animated background layers -->
+  <div class="bg-grid" aria-hidden="true"></div>
+  <div class="bg-glow" aria-hidden="true"></div>
+  <div class="scanline" aria-hidden="true"></div>
+
+  <!-- Header -->
+  <header>
+    <div class="header-left">
+      <div class="logo">
+        <span class="logo-bracket">[</span>CYBER<span class="logo-accent">FEED</span><span class="logo-bracket">]</span>
+        <span class="cursor blink">_</span>
+      </div>
+      <p class="tagline">// Security &amp; Tech Intelligence Dashboard</p>
+    </div>
+    <div class="header-right">
+      <div class="status-bar">
+        <span class="status-dot" id="status-dot"></span>
+        <span id="status-text" class="mono">CONNECTING...</span>
+      </div>
+      <div class="clock mono" id="clock"></div>
+    </div>
+  </header>
+
+  <!-- Controls -->
+  <nav class="controls" aria-label="Feed filters">
+    <div class="filter-group">
+      <button class="filter-btn active" data-filter="all">
+        <span class="btn-icon">◈</span> ALL FEEDS
+      </button>
+      <button class="filter-btn" data-filter="security">
+        <span class="btn-icon">⚠</span> SECURITY
+      </button>
+      <button class="filter-btn" data-filter="tech">
+        <span class="btn-icon">◎</span> TECH
+      </button>
+    </div>
+    <div class="search-group">
+      <span class="search-icon mono">⌕</span>
+      <input
+        type="search"
+        id="search-input"
+        class="search-input mono"
+        placeholder="SEARCH ARTICLES..."
+        autocomplete="off"
+        spellcheck="false"
+      />
+      <button class="search-clear" id="search-clear" hidden title="Clear search">✕</button>
+    </div>
+    <div class="control-actions">
+      <div class="sort-group">
+        <label class="mono label-sm">SORT</label>
+        <select id="sort-select" class="sort-select mono">
+          <option value="date">NEWEST FIRST</option>
+          <option value="source">BY SOURCE</option>
+        </select>
+      </div>
+      <button class="refresh-btn" id="refresh-btn" title="Force refresh feeds">
+        <span class="refresh-icon" id="refresh-icon">↻</span>
+        <span class="mono">REFRESH</span>
+      </button>
+      <div class="cache-info mono" id="cache-info"></div>
+    </div>
+  </nav>
+
+  <!-- Stats bar -->
+  <div class="stats-bar" id="stats-bar" hidden>
+    <div class="stat-item">
+      <span class="stat-value mono" id="stat-total">0</span>
+      <span class="stat-label">ARTICLES</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+      <span class="stat-value mono security-color" id="stat-security">0</span>
+      <span class="stat-label">SECURITY</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+      <span class="stat-value mono tech-color" id="stat-tech">0</span>
+      <span class="stat-label">TECH</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+      <span class="stat-value mono" id="stat-sources">0</span>
+      <span class="stat-label">SOURCES</span>
+    </div>
+  </div>
+
+  <!-- Main content -->
+  <main id="main">
+
+    <!-- Loading state (status dot in header handles this) -->
+    <div id="loading-screen" hidden></div>
+
+    <!-- Error state -->
+    <div class="error-banner" id="error-screen" hidden>
+      <span class="error-banner-icon">⚠</span>
+      <span class="error-banner-text mono" id="error-msg"></span>
+      <button class="error-banner-retry mono" onclick="loadFeeds()">RETRY</button>
+    </div>
+
+    <!-- Feed grid -->
+    <div class="feed-grid" id="feed-grid" hidden></div>
+
+    <!-- Empty state -->
+    <div class="empty-screen" id="empty-screen" hidden>
+      <div class="empty-icon">◈</div>
+      <p class="mono" id="empty-msg">NO ARTICLES MATCH THE CURRENT FILTER</p>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <span class="mono footer-text">
+      CYBERFEED v1.0 // Auto-refresh every 10 min //
+      <span id="footer-sources"></span> active sources
+    </span>
+  </footer>
+
+  <script src="../js/projects/cyberfeed.js"></script>
+</body>
+</html>
