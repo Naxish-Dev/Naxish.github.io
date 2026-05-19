@@ -21,12 +21,12 @@ const RSS2JSON = 'https://api.rss2json.com/v1/api.json';
 const FEEDS = [
   { name: 'The Hacker News',   url: 'https://feeds.feedburner.com/TheHackersNews',      category: 'security', color: '#ff4757' },
   { name: 'Krebs on Security', url: 'https://krebsonsecurity.com/feed/',                category: 'security', color: '#ff6b81' },
-  { name: 'Bleeping Computer', url: 'https://www.bleepingcomputer.com/feed/',            category: 'security', color: '#ffa502' },
+  { name: 'SecurityWeek',      url: 'https://feeds.feedburner.com/securityweek',        category: 'security', color: '#ffa502' }, // Bleeping Computer blocked by rss2json (422)
   { name: 'Dark Reading',      url: 'https://www.darkreading.com/rss.xml',              category: 'security', color: '#ff6348' },
-  { name: 'SANS ISC',          url: 'https://isc.sans.edu/rssfeed_full.xml',            category: 'security', color: '#eccc68' },
+  { name: 'SANS ISC',          url: 'https://isc.sans.edu/rssfeed.xml',                 category: 'security', color: '#eccc68' }, // rssfeed_full.xml too large, causes proxy timeouts
   { name: 'Ars Technica',      url: 'https://feeds.arstechnica.com/arstechnica/index',  category: 'tech',     color: '#00d4ff' },
   { name: 'TechCrunch',        url: 'https://techcrunch.com/feed/',                     category: 'tech',     color: '#2ed573' },
-  { name: 'The Verge',         url: 'https://www.theverge.com/rss/index.xml',           category: 'tech',     color: '#a78bfa' },
+  { name: 'Wired',             url: 'https://www.wired.com/feed/rss',                   category: 'tech',     color: '#a78bfa' }, // The Verge blocked by rss2json (422)
 ];
 
 // ===== STATE =====
