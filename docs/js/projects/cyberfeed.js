@@ -7,7 +7,7 @@
  * @version 1.0
  *
  * Features:
- * - Fetches RSS via rss2json.com with allorigins and corsproxy fallbacks
+ * - Fetches RSS via rss2json.com with allorigins, codetabs, and htmldriven fallbacks
  * - Filter by category (Security / Tech / All)
  * - Full-text search across titles, snippets and sources
  * - Sort by newest or by source
@@ -160,38 +160,54 @@ function parseXml(xml, feed) {
   return { source: feed.name, category: feed.category, color: feed.color, items };
 }
 
-// Strategy 2: allorigins.win — wraps response in JSON { contents: "..." }
+// Strategy 2: allorigins.win raw endpoint — returns content directly, no JSON wrapper
 async function fetchViaAllOrigins(feed) {
   const t   = timeout(12000);
-  const url = `https://api.allorigins.win/get?disableCache=true&url=${encodeURIComponent(feed.url)}`;
+  const url = `https://api.allorigins.win/raw?url=${encodeURIComponent(feed.url)}`;
   try {
-    const res  = await fetch(url, { signal: t.signal });
+    const res = await fetch(url, { signal: t.signal });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    if (!data.contents) throw new Error('Empty response');
-    return parseXml(data.contents, feed);
-  } finally { t.clear(); }
-}
-
-// Strategy 3: corsproxy.io — plain passthrough, returns raw XML
-async function fetchViaCorsproxy(feed) {
-  const t   = timeout(12000);
-  const url = `https://corsproxy.io/?url=${encodeURIComponent(feed.url)}`;
-  try {
-    const res  = await fetch(url, { signal: t.signal });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const xml  = await res.text();
+    const xml = await res.text();
+    if (!xml || xml.trim().length < 50) throw new Error('Empty response');
     return parseXml(xml, feed);
   } finally { t.clear(); }
 }
 
-// Try all three proxies in sequence
+// Strategy 3: codetabs.com — reliable public CORS proxy
+async function fetchViaCodetabs(feed) {
+  const t   = timeout(12000);
+  const url = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(feed.url)}`;
+  try {
+    const res = await fetch(url, { signal: t.signal });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const xml = await res.text();
+    if (!xml || xml.trim().length < 50) throw new Error('Empty response');
+    return parseXml(xml, feed);
+  } finally { t.clear(); }
+}
+
+// Strategy 4: htmldriven CORS proxy — final fallback
+async function fetchViaHtmldriven(feed) {
+  const t   = timeout(12000);
+  const url = `https://cors-proxy.htmldriven.com/?url=${encodeURIComponent(feed.url)}`;
+  try {
+    const res = await fetch(url, { signal: t.signal });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const xml = await res.text();
+    if (!xml || xml.trim().length < 50) throw new Error('Empty response');
+    return parseXml(xml, feed);
+  } finally { t.clear(); }
+}
+
+// Try all four proxies in sequence
 async function fetchFeed(feed) {
   try { return await fetchViaRss2Json(feed); }
   catch (e1) { console.warn(`[rss2json]    ${feed.name}: ${e1.message}`); }
   try { return await fetchViaAllOrigins(feed); }
   catch (e2) { console.warn(`[allorigins]  ${feed.name}: ${e2.message}`); }
-  return await fetchViaCorsproxy(feed); // throws if this also fails
+  try { return await fetchViaCodetabs(feed); }
+  catch (e3) { console.warn(`[codetabs]    ${feed.name}: ${e3.message}`); }
+  return await fetchViaHtmldriven(feed); // throws if this also fails
 }
 
 // ===== LOAD ALL FEEDS =====
