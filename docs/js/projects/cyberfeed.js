@@ -11,7 +11,7 @@
  * - Filter by category (Security / Tech / All)
  * - Full-text search across titles, snippets and sources
  * - Sort by newest or by source
- * - Auto-refresh every 10 minutes with countdown
+ * - Auto-refresh every 30 minutes with countdown
  * - XSS-safe HTML rendering via escapeHtml / escapeAttr
  */
 
