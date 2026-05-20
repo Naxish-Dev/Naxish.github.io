@@ -223,10 +223,11 @@ async function loadFeeds() {
   updateStats();
   renderGrid();
 
-  // Auto-refresh every 10 min (rss2json free tier: 10k req/month)
+  // Auto-refresh every 30 min — feeds update at most hourly, and more frequent polling
+  // puts unnecessary load on the free CORS proxy services being used as intermediaries
   if (state.refreshTimer) clearTimeout(state.refreshTimer);
-  state.refreshTimer = setTimeout(() => loadFeeds(), 10 * 60 * 1000);
-  startCacheCountdown(10 * 60);
+  state.refreshTimer = setTimeout(() => loadFeeds(), 30 * 60 * 1000);
+  startCacheCountdown(30 * 60);
   setRefreshBtnState(false);
 }
 
