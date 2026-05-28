@@ -274,39 +274,6 @@ header {
 
 .sort-select option { background: var(--bg-elevated); }
 
-.refresh-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
-  background: transparent;
-  border: 1px solid var(--border-bright);
-  border-radius: var(--radius-sm);
-  color: var(--text-secondary);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 1px;
-  cursor: pointer;
-  transition: all var(--transition);
-}
-
-.refresh-btn:hover {
-  border-color: var(--green);
-  color: var(--green);
-  background: var(--green-dim);
-}
-
-.refresh-btn.large {
-  margin-top: 1rem;
-  padding: 10px 24px;
-  font-size: 13px;
-}
-
-.refresh-icon { font-size: 14px; display: inline-block; }
-.refresh-icon.spinning { animation: spin 1s linear infinite; }
-
-@keyframes spin { to { transform: rotate(360deg); } }
-
 .cache-info {
   font-size: 10px;
   color: var(--text-muted);

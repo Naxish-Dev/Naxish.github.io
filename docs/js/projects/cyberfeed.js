@@ -1,7 +1,7 @@
 ﻿/**
  * CyberFeed - Security & Tech Intelligence Dashboard
  * Live RSS aggregator fetching from cybersecurity and tech news sources.
- * Designed for static hosting (GitHub Pages) — no server required.
+ * 
  *
  * @author Naxish
  * @version 1.0
@@ -21,12 +21,12 @@ const RSS2JSON = 'https://api.rss2json.com/v1/api.json';
 const FEEDS = [
   { name: 'The Hacker News',   url: 'https://feeds.feedburner.com/TheHackersNews',      category: 'security', color: '#ff4757' },
   { name: 'Krebs on Security', url: 'https://krebsonsecurity.com/feed/',                category: 'security', color: '#ff6b81' },
-  { name: 'SecurityWeek',      url: 'https://feeds.feedburner.com/securityweek',        category: 'security', color: '#ffa502' }, // Bleeping Computer blocked by rss2json (422)
+  { name: 'SecurityWeek',      url: 'https://feeds.feedburner.com/securityweek',        category: 'security', color: '#ffa502' },
   { name: 'Dark Reading',      url: 'https://www.darkreading.com/rss.xml',              category: 'security', color: '#ff6348' },
-  { name: 'SANS ISC',          url: 'https://isc.sans.edu/rssfeed.xml',                 category: 'security', color: '#eccc68' }, // rssfeed_full.xml too large, causes proxy timeouts
+  { name: 'SANS ISC',          url: 'https://isc.sans.edu/rssfeed.xml',                 category: 'security', color: '#eccc68' }, 
   { name: 'Ars Technica',      url: 'https://feeds.arstechnica.com/arstechnica/index',  category: 'tech',     color: '#00d4ff' },
   { name: 'TechCrunch',        url: 'https://techcrunch.com/feed/',                     category: 'tech',     color: '#2ed573' },
-  { name: 'Hacker News',       url: 'https://news.ycombinator.com/rss',                category: 'tech',     color: '#a78bfa' }, // Wired blocked by codetabs (empty response)
+  { name: 'Hacker News',       url: 'https://news.ycombinator.com/rss',                category: 'tech',     color: '#a78bfa' }, 
 ];
 
 // ===== STATE =====
@@ -49,8 +49,6 @@ const els = {
   statSecurity:  $('#stat-security'),
   statTech:      $('#stat-tech'),
   statSources:   $('#stat-sources'),
-  refreshBtn:    $('#refresh-btn'),
-  refreshIcon:   $('#refresh-icon'),
   sortSelect:    $('#sort-select'),
   cacheInfo:     $('#cache-info'),
   searchInput:   $('#search-input'),
@@ -128,10 +126,10 @@ function parseXml(xml, feed) {
     const desc    = isAtom ? (get(el, 'summary') || get(el, 'content'))   : (get(el, 'description') || get(el, 'content\\:encoded'));
     const link    = isAtom
       ? (el.querySelector('link[rel="alternate"]')?.getAttribute('href') || el.querySelector('link')?.getAttribute('href') || '')
-      : (get(el, 'link') || el.querySelector('link')?.nextSibling?.nodeValue?.trim() || '');
+      : (get(el, 'link') || el.querySelector('link')?.nextSibling?.nodeValue?.trim() || get(el, 'guid') || '');
     const cats = Array.from(el.querySelectorAll('category'))
       .map((c) => c.textContent.trim() || c.getAttribute('term') || '').filter(Boolean).slice(0, 3);
-    return { title: title || 'Untitled', link: link || '#', pubDate: pubDate || null,
+    return { title: title || 'Untitled', link: link || '', pubDate: pubDate || null,
              snippet: stripHtml(desc).slice(0, 220), categories: cats };
   });
   return { source: feed.name, category: feed.category, color: feed.color, items };
@@ -177,7 +175,7 @@ async function fetchViaRss2Json(feed) {
       source: feed.name, category: feed.category, color: feed.color,
       items: json.items.map((item) => ({
         title:      item.title || 'Untitled',
-        link:       item.link  || '#',
+        link:       item.link  || '',
         pubDate:    item.pubDate || null,
         snippet:    stripHtml(item.description || item.content || '').slice(0, 220),
         categories: Array.isArray(item.categories) ? item.categories.slice(0, 3) : [],
@@ -213,7 +211,6 @@ async function loadFeeds() {
     showEl(els.errorScreen);
     els.errorMsg.textContent = 'Could not load any feeds. Check your connection and try again.';
     setStatus('error', 'CONNECTION FAILED');
-    setRefreshBtnState(false);
     return;
   }
 
@@ -228,7 +225,6 @@ async function loadFeeds() {
   if (state.refreshTimer) clearTimeout(state.refreshTimer);
   state.refreshTimer = setTimeout(() => loadFeeds(), 30 * 60 * 1000);
   startCacheCountdown(30 * 60);
-  setRefreshBtnState(false);
 }
 
 // ===== BUILD CARD HTML =====
@@ -241,7 +237,7 @@ function buildCard(item, source, category, color) {
     : '';
   return `
     <a class="card" href="${escapeAttr(item.link)}" target="_blank" rel="noopener noreferrer"
-       data-category="${escapeAttr(category)}" style="--source-color:${color};" title="${escapeAttr(item.title)}">
+       data-category="${escapeAttr(category)}" style="--source-color:${color};" title="Go to source">
       <div class="card-accent"></div>
       <div class="card-body">
         <div class="card-meta">
@@ -331,13 +327,6 @@ function startCacheCountdown(seconds) {
   state.cacheCountdown = setInterval(update, 1000);
 }
 
-// ===== REFRESH BUTTON =====
-function setRefreshBtnState(loading) {
-  els.refreshIcon.classList.toggle('spinning', loading);
-  els.refreshBtn.disabled = loading;
-}
-els.refreshBtn.addEventListener('click', () => { setRefreshBtnState(true); loadFeeds(); });
-
 // ===== FILTERS =====
 $$('.filter-btn').forEach((btn) => btn.addEventListener('click', () => {
   $$('.filter-btn').forEach((b) => b.classList.remove('active'));
@@ -367,6 +356,7 @@ function escapeHtml(str) {
   if (!str) return '';
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
+
 function escapeAttr(str) {
   if (!str) return '#';
   const s = String(str).trim();
