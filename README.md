@@ -1,18 +1,22 @@
 # Naxish.github.io
 
-Personal portfolio website for network engineering projects and interactive security games.
+Personal portfolio website for a Network Engineer and Security Analyst.
 
-**Live site**: [Nanxish Portfolio](https://naxish.dev)
+**Live site**: [Naxish Portfolio](https://naxish.dev)
 
 ## What's Here
 
-This portfolio includes a network topology builder and several browser-based games focused on networking and security concepts. Everything runs client-side with vanilla JavaScript.
+Everything runs client-side with vanilla JavaScript and is hosted on GitHub Pages.
 
-### Network Topology Builder
-Interactive tool for designing network diagrams with drag-and-drop devices, visual link creation, and Cisco-style configuration export. Supports L2/L3 interface configuration and subnet-based color coding.
+### Projects
+
+- **CyberFeed** - Live cybersecurity & tech news dashboard. Aggregates RSS from 9 sources via a self-hosted Cloudflare Worker, with localStorage caching and auto-refresh.
+- **Cyber Dashboard** - Personal security/infrastructure monitoring dashboard.
+- **Network Design Tool** - Interactive network topology builder with drag-and-drop devices, visual link creation, and Cisco-style configuration export. Supports L2/L3 interface configuration and subnet-based colour coding.
 
 ### Games
-Nine playable games covering different security and networking concepts:
+
+Nine browser-based games covering networking and security concepts:
 
 - **Packet Collector** - Idle clicker with upgrades
 - **Packet Runner** - Side-scrolling platformer
@@ -29,7 +33,8 @@ Nine playable games covering different security and networking concepts:
 - HTML5, CSS3, vanilla JavaScript
 - Canvas API for game rendering
 - SVG for network diagrams
-- LocalStorage for persistence
+- LocalStorage for game/feed persistence
+- Cloudflare Worker for server-side RSS aggregation
 - GitHub Pages hosting
 
 ## Project Structure
@@ -37,32 +42,22 @@ Nine playable games covering different security and networking concepts:
 ```
 docs/
 ├── index.html                  # Main portfolio page
-├── projects/                   # Utilities and tools
+├── projects/                   # Tools and dashboards
+│   ├── cyberfeed.html
+│   ├── cyber-dashboard.html
 │   └── networkdesign.html
 ├── games/                      # All game files
 ├── css/
+│   ├── index.css
 │   ├── projects/
 │   └── games/
 └── js/
+    ├── main.js
+    ├── projects/               # Per-project logic (cyberfeed, cyber-dashboard, networkdesign)
     ├── games/                  # Game implementations
     ├── utils/                  # Shared helpers (storage, UI, game loops)
     └── config/                 # Constants and settings
 ```
-
-## Recent Changes
-
-**v2.1** - Major refactor and game additions
-- Added 7 new games (Firewall Defense, SQL Hunter, etc.)
-- Reorganized files into logical folders (projects/, games/)
-- Created shared utility modules for localStorage, UI, and game loops
-- Added JSDoc documentation across all JavaScript
-- Centralized game configuration
-
-**v2.0** - Code quality improvements
-- Fixed network design tool compatibility
-- Improved error handling and input validation
-- Better accessibility with ARIA labels
-- SEO optimization with meta tags
 
 ## Contact
 
