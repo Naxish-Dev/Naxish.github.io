@@ -1,35 +1,44 @@
 ﻿/**
  * CyberFeed - Security & Tech Intelligence Dashboard
- * Live RSS aggregator fetching from cybersecurity and tech news sources.
- * 
+ * Aggregates cybersecurity and tech news via a self-hosted Cloudflare Worker.
  *
  * @author Naxish
- * @version 1.0
+ * @version 2.0
+ *
+ * Architecture:
+ * - All RSS fetching and parsing is handled server-side by the Cloudflare Worker.
+ *   The worker deduplicates, sorts, and caches responses at the CDN edge for 15 minutes.
+ *   The client makes a single request and receives a flat JSON array of up to 100 articles.
+ * - Each article carries a category field ("Cybersecurity"/"Tech") set by the worker.
+ *   The client maps these to internal keys ("security"/"tech") and enriches with display colors.
+ * - Results are cached in localStorage for 1 hour to avoid unnecessary Worker requests.
+ * - Auto-refresh runs on the same 1-hour interval, aligned with the client cache TTL.
  *
  * Features:
- * - Fetches RSS via codetabs (primary), thingproxy.freeboard.io (fallback), allorigins.win/get (last resort)
  * - Filter by category (Security / Tech / All)
  * - Full-text search across titles, snippets and sources
  * - Sort by newest or by source
- * - Auto-refresh every 30 minutes with countdown
  * - XSS-safe HTML rendering via escapeHtml / escapeAttr
  */
 
 // ===== FEED SOURCES =====
+// Names must match the worker's source field exactly — used for color lookup.
+// Category is a local fallback only; the worker provides the authoritative category per article.
 const FEEDS = [
-  { name: 'The Hacker News',   url: 'https://feeds.feedburner.com/TheHackersNews',      category: 'security', color: '#ff4757' },
-  { name: 'Krebs on Security', url: 'https://krebsonsecurity.com/feed/',                category: 'security', color: '#ff6b81' },
-  { name: 'SecurityWeek',      url: 'https://feeds.feedburner.com/securityweek',        category: 'security', color: '#ffa502' },
-  { name: 'Dark Reading',      url: 'https://www.darkreading.com/rss.xml',              category: 'security', color: '#ff6348' },
-  { name: 'SANS ISC',          url: 'https://isc.sans.edu/rssfeed.xml',                 category: 'security', color: '#eccc68' }, 
-  { name: 'Ars Technica',      url: 'https://feeds.arstechnica.com/arstechnica/index',  category: 'tech',     color: '#00d4ff' },
-  { name: 'TechCrunch',        url: 'https://techcrunch.com/feed/',                     category: 'tech',     color: '#2ed573' },
-  { name: 'Hacker News',       url: 'https://news.ycombinator.com/rss',                category: 'tech',     color: '#a78bfa' }, 
+  { name: 'The Hacker News',  category: 'security', color: '#ff4757' },
+  { name: 'KrebsOnSecurity',  category: 'security', color: '#ff6b81' },
+  { name: 'SecurityWeek',     category: 'security', color: '#ffa502' },
+  { name: 'Dark Reading',     category: 'security', color: '#ff6348' },
+  { name: 'SANS ISC',         category: 'security', color: '#eccc68' },
+  { name: 'BleepingComputer', category: 'security', color: '#ff8c00' },
+  { name: 'Ars Technica',     category: 'tech',     color: '#00d4ff' },
+  { name: 'TechCrunch',       category: 'tech',     color: '#2ed573' },
+  { name: 'Hacker News',      category: 'tech',     color: '#a78bfa' },
 ];
 
 // ===== CACHE =====
 const CACHE_KEY     = 'cyberfeed_cache';
-const CACHE_TTL_MS  = 60 * 60 * 1000; // 1 hour — page reloads within this window skip all proxy requests
+const CACHE_TTL_MS  = 60 * 60 * 1000; // 1 hour — matches auto-refresh interval; reloads within this window skip the Worker
 
 function saveCache(feeds) {
   try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), feeds })); } catch (_) {}
@@ -124,119 +133,83 @@ function formatDate(dateStr) {
   } catch { return ''; }
 }
 
-// ===== FETCH HELPERS =====
+// ===== UTILS =====
+// AbortController-based timeout for fetch calls
 function timeout(ms) {
   const ctrl = new AbortController();
   const id   = setTimeout(() => ctrl.abort(), ms);
   return { signal: ctrl.signal, clear: () => clearTimeout(id) };
 }
 
-// Shared: parse raw RSS/Atom XML string into items array
-function parseXml(xml, feed) {
-  const doc    = new DOMParser().parseFromString(xml, 'text/xml');
-  if (doc.querySelector('parsererror')) throw new Error('XML parse error');
-  const isAtom = !!doc.querySelector('feed');
-  const nodes  = Array.from(doc.querySelectorAll(isAtom ? 'entry' : 'item')).slice(0, 12);
-  const get    = (el, sel) => el.querySelector(sel)?.textContent?.trim() || '';
-  const items  = nodes.map((el) => {
-    const title   = get(el, 'title');
-    const pubDate = isAtom ? (get(el, 'updated') || get(el, 'published')) : (get(el, 'pubDate') || get(el, 'dc\\:date'));
-    const desc    = isAtom ? (get(el, 'summary') || get(el, 'content'))   : (get(el, 'description') || get(el, 'content\\:encoded'));
-    const link    = isAtom
-      ? (el.querySelector('link[rel="alternate"]')?.getAttribute('href') || el.querySelector('link')?.getAttribute('href') || '')
-      : (get(el, 'link') || el.querySelector('link')?.nextSibling?.nodeValue?.trim() || get(el, 'guid') || '');
-    const cats = Array.from(el.querySelectorAll('category'))
-      .map((c) => c.textContent.trim() || c.getAttribute('term') || '').filter(Boolean).slice(0, 3);
-    return { title: title || 'Untitled', link: link || '', pubDate: pubDate || null,
-             snippet: stripHtml(desc).slice(0, 220), categories: cats };
-  });
-  return { source: feed.name, category: feed.category, color: feed.color, items };
+// ===== WORKER =====
+const WORKER_URL = 'https://rss-aggreator.naxishdev.workers.dev/';
+
+// Built once at startup: maps worker source name → { category, color }.
+const FEED_META = Object.fromEntries(FEEDS.map((f) => [f.name, { category: f.category, color: f.color }]));
+
+// Maps worker category labels to internal client keys.
+// Worker outputs "Cybersecurity" and "Tech"; client uses "security" and "tech".
+const CATEGORY_MAP = { Cybersecurity: 'security', Tech: 'tech' };
+
+// Resolves display color for a source name.
+// Worker source names match FEEDS names exactly, so this is normally a direct lookup.
+// The slug fallback handles any future sources with minor casing differences.
+const normalize = (s) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+function resolveColor(src) {
+  if (FEED_META[src]) return FEED_META[src].color;
+  const slug  = normalize(src);
+  const entry = FEEDS.find((f) => normalize(f.name) === slug);
+  return entry ? entry.color : '#888888';
 }
 
-// Strategy 1: codetabs.com — primary CORS proxy (most reliable from GitHub Pages)
-async function fetchViaCodetabs(feed) {
-  const t   = timeout(12000);
-  const url = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(feed.url)}`;
+// Resolves the clean display name for a source.
+// Falls back to partial slug matching for sources like "Ars Technica - All content"
+// or "SANS Internet Storm Center, InfoCON: green" where the worker name differs from FEEDS.
+function resolveDisplayName(src) {
+  if (FEED_META[src]) return src; // exact match — already clean
+  const slug = normalize(src);
+  // exact slug match (e.g. "darkreading" → "Dark Reading")
+  let entry = FEEDS.find((f) => normalize(f.name) === slug);
+  if (!entry) {
+    // partial match: worker name starts with or contains a known FEEDS name
+    entry = FEEDS.find((f) => slug.startsWith(normalize(f.name)) || slug.includes(normalize(f.name)));
+  }
+  return entry ? entry.name : src;
+}
+
+// Single fetch to the Worker; groups the flat article array by source name.
+async function fetchFromWorker() {
+  const t = timeout(20000);
   try {
-    const res = await fetch(url, { signal: t.signal });
+    const res      = await fetch(WORKER_URL, { signal: t.signal });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const xml = await res.text();
-    if (!xml || xml.trim().length < 50) throw new Error('Empty response');
-    return parseXml(xml, feed);
-  } finally { t.clear(); }
-}
+    const articles = await res.json();
+    if (!Array.isArray(articles) || articles.length === 0) throw new Error('Empty response');
 
-// Strategy 2: thingproxy.freeboard.io — secondary fallback (raw content, always sends CORS headers)
-async function fetchViaThingproxy(feed) {
-  const t   = timeout(12000);
-  const url = `https://thingproxy.freeboard.io/fetch/${feed.url}`;
-  try {
-    const res = await fetch(url, { signal: t.signal });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const xml = await res.text();
-    if (!xml || xml.trim().length < 50) throw new Error('Empty response');
-    return parseXml(xml, feed);
+    // Group flat articles by source; category comes directly from the worker,
+    // color is resolved from local FEEDS metadata.
+    const grouped = {};
+    for (const article of articles) {
+      const src         = article.source || 'Unknown';
+      const displayName = resolveDisplayName(src);
+      const category    = CATEGORY_MAP[article.category] || FEED_META[src]?.category || FEED_META[displayName]?.category || 'tech';
+      const color       = resolveColor(src);
+      if (!grouped[src]) grouped[src] = { source: displayName, category, color, items: [] };
+      grouped[src].items.push({
+        title:      article.title       || 'Untitled',
+        link:       article.link        || '',
+        pubDate:    article.pubDate     || null,
+        snippet:    stripHtml(article.description || '').slice(0, 220),
+        categories: [],
+      });
+    }
+    return Object.values(grouped);
   } finally { t.clear(); }
-}
-
-// Strategy 3: allorigins.win /get — last resort (returns JSON envelope with XML in .contents)
-async function fetchViaAlloriginsGet(feed) {
-  const t   = timeout(12000);
-  const url = `https://api.allorigins.win/get?url=${encodeURIComponent(feed.url)}`;
-  try {
-    const res  = await fetch(url, { signal: t.signal });
-    t.clear();
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const json = await res.json();
-    const xml  = json.contents;
-    if (!xml || xml.trim().length < 50) throw new Error('Empty contents');
-    return parseXml(xml, feed);
-  } finally { t.clear(); }
-}
-
-// Try all three strategies in sequence
-async function fetchFeed(feed) {
-  try { return await fetchViaCodetabs(feed); }
-  catch (e1) { console.warn(`[codetabs]      ${feed.name}: ${e1.message}`); }
-  try { return await fetchViaThingproxy(feed); }
-  catch (e2) { console.warn(`[thingproxy]    ${feed.name}: ${e2.message}`); }
-  return await fetchViaAlloriginsGet(feed); // throws if this also fails
 }
 
 // ===== LOAD ALL FEEDS =====
-// Feeds are fetched sequentially with a 800 ms gap to avoid hammering free CORS
-// proxies. Each proxy (codetabs, allorigins) enforces per-IP rate limits; firing
-// all 8 requests in parallel causes most of them to be rejected with HTTP 422/429.
-const FETCH_DELAY_MS = 800;
-
-async function loadFeedsSequential() {
-  const results = [];
-  for (let i = 0; i < FEEDS.length; i++) {
-    if (i > 0) await new Promise((r) => setTimeout(r, FETCH_DELAY_MS));
-    try {
-      results.push({ status: 'fulfilled', value: await fetchFeed(FEEDS[i]) });
-    } catch (err) {
-      results.push({ status: 'rejected', reason: err });
-    }
-    // Render partial results as they arrive so the page feels responsive
-    const partial = results.map((r, j) => {
-      if (r.status === 'fulfilled') return r.value;
-      return { source: FEEDS[j].name, category: FEEDS[j].category, color: FEEDS[j].color, items: [], error: true };
-    });
-    const loaded = partial.filter((f) => f.items.length > 0);
-    if (loaded.length > 0) {
-      state.feeds = partial;
-      hideEl(els.errorScreen);
-      setStatus('loading', `LOADING… ${loaded.length}/${FEEDS.length} SOURCES`);
-      updateStats();
-      renderGrid();
-    }
-  }
-  return results;
-}
-
 async function loadFeeds() {
-  // Serve from localStorage cache if data is still fresh — prevents proxy spam on page reload
+  // Serve from localStorage cache if data is still fresh — prevents worker spam on page reload
   const cached = loadCache();
   if (cached) {
     const remainingSec = Math.ceil((CACHE_TTL_MS - cached.ageMs) / 1000);
@@ -261,13 +234,7 @@ async function loadFeeds() {
   setStatus('loading', 'CONNECTING...');
 
   try {
-    const results = await loadFeedsSequential();
-    const feeds   = results.map((r, i) => {
-      if (r.status === 'fulfilled') return r.value;
-      console.warn(`[CyberFeed] ${FEEDS[i].name}: ${r.reason?.message}`);
-      return { source: FEEDS[i].name, category: FEEDS[i].category, color: FEEDS[i].color, items: [], error: true };
-    });
-
+    const feeds  = await fetchFromWorker();
     const loaded = feeds.filter((f) => f.items.length > 0);
     if (loaded.length === 0) {
       showEl(els.errorScreen);
@@ -277,33 +244,35 @@ async function loadFeeds() {
     }
 
     state.feeds = feeds;
-    saveCache(feeds); // persist so rapid page reloads skip the proxies
+    saveCache(feeds);
     hideEl(els.errorScreen);
     setStatus('online', `LIVE — ${loaded.length} SOURCES`);
     updateStats();
     renderGrid();
 
-    // Auto-refresh every 30 min — feeds update at most hourly, and more frequent polling
-    // puts unnecessary load on the free CORS proxy services being used as intermediaries
+    // Refresh on the same interval as the cache TTL so the timer and cache stay in sync
     if (state.refreshTimer) clearTimeout(state.refreshTimer);
-    state.refreshTimer = setTimeout(() => loadFeeds(), 30 * 60 * 1000);
-    startCacheCountdown(30 * 60);
+    state.refreshTimer = setTimeout(() => loadFeeds(), CACHE_TTL_MS);
+    startCacheCountdown(CACHE_TTL_MS / 1000);
+  } catch (err) {
+    console.error('[CyberFeed] Worker fetch failed:', err.message);
+    showEl(els.errorScreen);
+    els.errorMsg.textContent = 'Could not load feeds. Check your connection and try again.';
+    setStatus('error', 'CONNECTION FAILED');
   } finally {
     isFetching = false;
   }
 }
 
 // ===== BUILD CARD HTML =====
+// Note: animation-delay and --source-color are injected by renderGrid after building,
+// so the <a> element intentionally carries no style attribute here.
 function buildCard(item, source, category, color) {
   const date    = formatDate(item.pubDate);
   const snippet = item.snippet ? `<p class="card-snippet">${escapeHtml(item.snippet)}</p>` : '';
-  const tags    = item.categories && item.categories.length > 0
-    ? `<div class="card-tags">${item.categories.map((c) =>
-        `<span class="tag">#${escapeHtml(c.toLowerCase().replace(/\s+/g,'-'))}</span>`).join('')}</div>`
-    : '';
   return `
     <a class="card" href="${escapeAttr(item.link)}" target="_blank" rel="noopener noreferrer"
-       data-category="${escapeAttr(category)}" style="--source-color:${color};" title="Go to source">
+       data-category="${escapeAttr(category)}" title="Go to source">
       <div class="card-accent"></div>
       <div class="card-body">
         <div class="card-meta">
@@ -312,7 +281,7 @@ function buildCard(item, source, category, color) {
           ${date ? `<span class="card-date">${escapeHtml(date)}</span>` : ''}
         </div>
         <h2 class="card-title">${escapeHtml(item.title)}</h2>
-        ${snippet}${tags}
+        ${snippet}
       </div>
     </a>`;
 }
@@ -364,12 +333,12 @@ function renderGrid() {
 function updateStats() {
   let total = 0, security = 0, tech = 0, sources = 0;
   for (const feed of state.feeds) {
-    if (feed.items.length > 0) sources++;
-    for (const _ of feed.items) {
-      total++;
-      if (feed.category === 'security') security++;
-      if (feed.category === 'tech')     tech++;
-    }
+    const count = feed.items.length;
+    if (count === 0) continue;
+    sources++;
+    total    += count;
+    if (feed.category === 'security') security += count;
+    else if (feed.category === 'tech') tech     += count;
   }
   els.statTotal.textContent    = total;
   els.statSecurity.textContent = security;
@@ -380,6 +349,7 @@ function updateStats() {
 }
 
 // ===== CACHE COUNTDOWN =====
+// Counts down to the next scheduled refresh in the status bar.
 function startCacheCountdown(seconds) {
   if (state.cacheCountdown) clearInterval(state.cacheCountdown);
   let remaining = seconds;
