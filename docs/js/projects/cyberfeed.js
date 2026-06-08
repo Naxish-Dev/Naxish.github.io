@@ -27,7 +27,27 @@ const FEEDS = [
   { name: 'Hacker News',       url: 'https://news.ycombinator.com/rss',                category: 'tech',     color: '#a78bfa' }, 
 ];
 
+// ===== CACHE =====
+const CACHE_KEY     = 'cyberfeed_cache';
+const CACHE_TTL_MS  = 60 * 60 * 1000; // 1 hour — page reloads within this window skip all proxy requests
+
+function saveCache(feeds) {
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), feeds })); } catch (_) {}
+}
+
+function loadCache() {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const { ts, feeds } = JSON.parse(raw);
+    const age = Date.now() - ts;
+    if (age > CACHE_TTL_MS || !Array.isArray(feeds)) return null;
+    return { feeds, ageMs: age };
+  } catch (_) { return null; }
+}
+
 // ===== STATE =====
+let isFetching = false; // guard against concurrent loadFeeds calls
 let state = { feeds: [], filter: 'all', sort: 'date', search: '', refreshTimer: null, cacheCountdown: null };
 
 // ===== DOM REFS =====
@@ -184,37 +204,93 @@ async function fetchFeed(feed) {
 }
 
 // ===== LOAD ALL FEEDS =====
+// Feeds are fetched sequentially with a 800 ms gap to avoid hammering free CORS
+// proxies. Each proxy (codetabs, allorigins) enforces per-IP rate limits; firing
+// all 8 requests in parallel causes most of them to be rejected with HTTP 422/429.
+const FETCH_DELAY_MS = 800;
+
+async function loadFeedsSequential() {
+  const results = [];
+  for (let i = 0; i < FEEDS.length; i++) {
+    if (i > 0) await new Promise((r) => setTimeout(r, FETCH_DELAY_MS));
+    try {
+      results.push({ status: 'fulfilled', value: await fetchFeed(FEEDS[i]) });
+    } catch (err) {
+      results.push({ status: 'rejected', reason: err });
+    }
+    // Render partial results as they arrive so the page feels responsive
+    const partial = results.map((r, j) => {
+      if (r.status === 'fulfilled') return r.value;
+      return { source: FEEDS[j].name, category: FEEDS[j].category, color: FEEDS[j].color, items: [], error: true };
+    });
+    const loaded = partial.filter((f) => f.items.length > 0);
+    if (loaded.length > 0) {
+      state.feeds = partial;
+      hideEl(els.errorScreen);
+      setStatus('loading', `LOADING… ${loaded.length}/${FEEDS.length} SOURCES`);
+      updateStats();
+      renderGrid();
+    }
+  }
+  return results;
+}
+
 async function loadFeeds() {
+  // Serve from localStorage cache if data is still fresh — prevents proxy spam on page reload
+  const cached = loadCache();
+  if (cached) {
+    const remainingSec = Math.ceil((CACHE_TTL_MS - cached.ageMs) / 1000);
+    state.feeds = cached.feeds;
+    hideEl(els.errorScreen);
+    const loaded = cached.feeds.filter((f) => f.items.length > 0);
+    setStatus('online', `CACHED — ${loaded.length} SOURCES`);
+    updateStats();
+    renderGrid();
+    if (state.refreshTimer) clearTimeout(state.refreshTimer);
+    state.refreshTimer = setTimeout(() => loadFeeds(), remainingSec * 1000);
+    startCacheCountdown(remainingSec);
+    return;
+  }
+
+  // Block concurrent fetches (e.g. double-click on a manual refresh button)
+  if (isFetching) return;
+  isFetching = true;
+
   hideEl(els.errorScreen);
   if (state.feeds.length === 0) { hideEl(els.feedGrid); hideEl(els.statsBar); }
   setStatus('loading', 'CONNECTING...');
 
-  const results = await Promise.allSettled(FEEDS.map(fetchFeed));
-  const feeds   = results.map((r, i) => {
-    if (r.status === 'fulfilled') return r.value;
-    console.warn(`[CyberFeed] ${FEEDS[i].name}: ${r.reason?.message}`);
-    return { source: FEEDS[i].name, category: FEEDS[i].category, color: FEEDS[i].color, items: [], error: true };
-  });
+  try {
+    const results = await loadFeedsSequential();
+    const feeds   = results.map((r, i) => {
+      if (r.status === 'fulfilled') return r.value;
+      console.warn(`[CyberFeed] ${FEEDS[i].name}: ${r.reason?.message}`);
+      return { source: FEEDS[i].name, category: FEEDS[i].category, color: FEEDS[i].color, items: [], error: true };
+    });
 
-  const loaded = feeds.filter((f) => f.items.length > 0);
-  if (loaded.length === 0) {
-    showEl(els.errorScreen);
-    els.errorMsg.textContent = 'Could not load any feeds. Check your connection and try again.';
-    setStatus('error', 'CONNECTION FAILED');
-    return;
+    const loaded = feeds.filter((f) => f.items.length > 0);
+    if (loaded.length === 0) {
+      showEl(els.errorScreen);
+      els.errorMsg.textContent = 'Could not load any feeds. Check your connection and try again.';
+      setStatus('error', 'CONNECTION FAILED');
+      return;
+    }
+
+    state.feeds = feeds;
+    saveCache(feeds); // persist so rapid page reloads skip the proxies
+    hideEl(els.errorScreen);
+    setStatus('online', `LIVE — ${loaded.length} SOURCES`);
+    updateStats();
+    renderGrid();
+
+    // Auto-refresh every 30 min — feeds update at most hourly, and more frequent polling
+    // puts unnecessary load on the free CORS proxy services being used as intermediaries
+    if (state.refreshTimer) clearTimeout(state.refreshTimer);
+    state.refreshTimer = setTimeout(() => loadFeeds(), 30 * 60 * 1000);
+    startCacheCountdown(30 * 60);
+  } finally {
+    isFetching = false;
   }
-
-  state.feeds = feeds;
-  hideEl(els.errorScreen);
-  setStatus('online', `LIVE — ${loaded.length} SOURCES`);
-  updateStats();
-  renderGrid();
-
-  // Auto-refresh every 30 min — feeds update at most hourly, and more frequent polling
-  // puts unnecessary load on the free CORS proxy services being used as intermediaries
-  if (state.refreshTimer) clearTimeout(state.refreshTimer);
-  state.refreshTimer = setTimeout(() => loadFeeds(), 30 * 60 * 1000);
-  startCacheCountdown(30 * 60);
 }
 
 // ===== BUILD CARD HTML =====
