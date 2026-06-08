@@ -1,3 +1,23 @@
+2026-06-08
+- Version 2.5 Update
+- CyberFeed v2.0 — full rewrite of the RSS aggregation architecture
+- Replaced client-side CORS proxy chain (codetabs, corsproxy.io, rss2json) with a self-hosted Cloudflare Worker
+- Worker now handles all RSS fetching, XML parsing, deduplication and sorting server-side
+- Added Cloudflare KV caching on the worker with a 6-hour cron auto-refresh
+- Added BleepingComputer as a new security news source (9 sources total)
+- Client now reads category directly from worker JSON instead of guessing from source name
+- Fixed source name mismatches: KrebsOnSecurity, SANS ISC, Dark Reading, Ars Technica all resolve correctly
+- Added resolveDisplayName() to normalise messy worker source strings to clean display names
+- Added localStorage cache (6h 15m TTL) to prevent redundant worker requests on page reload
+- Added isFetching guard to block concurrent fetch calls
+- Auto-refresh interval aligned to 6h 15m to give cron a 15-minute buffer before client pulls
+- Fixed duplicate style attribute bug on card elements (animation-delay was being dropped)
+- Removed dead tags/categories rendering code (worker does not return article categories)
+- Optimised updateStats() to use feed.items.length instead of per-item loop
+- Updated footer version label from v1.0 to v2.0 and corrected refresh interval display
+- Updated README to reflect current project structure, tech stack and Worker architecture
+
+
 2026-03-26
 - Added music player
 - Added picture to about me

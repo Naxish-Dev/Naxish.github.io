@@ -11,8 +11,9 @@
  *   The client makes a single request and receives a flat JSON array of up to 100 articles.
  * - Each article carries a category field ("Cybersecurity"/"Tech") set by the worker.
  *   The client maps these to internal keys ("security"/"tech") and enriches with display colors.
- * - Results are cached in localStorage for 1 hour to avoid unnecessary Worker requests.
- * - Auto-refresh runs on the same 1-hour interval, aligned with the client cache TTL.
+ * - Results are cached in localStorage for 6h 15m — 15 minutes after the Worker's 6-hour KV
+ *   cron, giving the worker time to complete before the client fetches fresh data.
+ * - Auto-refresh runs on the same 6h 15m interval.
  *
  * Features:
  * - Filter by category (Security / Tech / All)
@@ -38,7 +39,7 @@ const FEEDS = [
 
 // ===== CACHE =====
 const CACHE_KEY     = 'cyberfeed_cache';
-const CACHE_TTL_MS  = 60 * 60 * 1000; // 1 hour — matches auto-refresh interval; reloads within this window skip the Worker
+const CACHE_TTL_MS  = (6 * 60 + 15) * 60 * 1000; // 6h 15m — 15-min buffer after the Worker's 6-hour KV cron to ensure fresh data
 
 function saveCache(feeds) {
   try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), feeds })); } catch (_) {}
