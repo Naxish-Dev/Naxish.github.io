@@ -7,7 +7,7 @@
  * @version 1.0
  *
  * Features:
- * - Fetches RSS via codetabs (primary), allorigins.win/raw (fallback), allorigins.win/get (last resort)
+ * - Fetches RSS via codetabs (primary), thingproxy.freeboard.io (fallback), allorigins.win/get (last resort)
  * - Filter by category (Security / Tech / All)
  * - Full-text search across titles, snippets and sources
  * - Sort by newest or by source
@@ -166,10 +166,10 @@ async function fetchViaCodetabs(feed) {
   } finally { t.clear(); }
 }
 
-// Strategy 2: allorigins.win /raw — secondary fallback (returns raw content)
-async function fetchViaAlloriginsRaw(feed) {
+// Strategy 2: thingproxy.freeboard.io — secondary fallback (raw content, always sends CORS headers)
+async function fetchViaThingproxy(feed) {
   const t   = timeout(12000);
-  const url = `https://api.allorigins.win/raw?url=${encodeURIComponent(feed.url)}`;
+  const url = `https://thingproxy.freeboard.io/fetch/${feed.url}`;
   try {
     const res = await fetch(url, { signal: t.signal });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -198,8 +198,8 @@ async function fetchViaAlloriginsGet(feed) {
 async function fetchFeed(feed) {
   try { return await fetchViaCodetabs(feed); }
   catch (e1) { console.warn(`[codetabs]      ${feed.name}: ${e1.message}`); }
-  try { return await fetchViaAlloriginsRaw(feed); }
-  catch (e2) { console.warn(`[allorigins/raw] ${feed.name}: ${e2.message}`); }
+  try { return await fetchViaThingproxy(feed); }
+  catch (e2) { console.warn(`[thingproxy]    ${feed.name}: ${e2.message}`); }
   return await fetchViaAlloriginsGet(feed); // throws if this also fails
 }
 
