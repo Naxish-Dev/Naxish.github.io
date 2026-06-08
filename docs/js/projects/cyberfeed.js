@@ -7,15 +7,13 @@
  * @version 1.0
  *
  * Features:
- * - Fetches RSS via codetabs (primary), corsproxy.io (fallback), rss2json (last resort)
+ * - Fetches RSS via codetabs (primary), allorigins.win/raw (fallback), allorigins.win/get (last resort)
  * - Filter by category (Security / Tech / All)
  * - Full-text search across titles, snippets and sources
  * - Sort by newest or by source
  * - Auto-refresh every 30 minutes with countdown
  * - XSS-safe HTML rendering via escapeHtml / escapeAttr
  */
-
-const RSS2JSON = 'https://api.rss2json.com/v1/api.json';
 
 // ===== FEED SOURCES =====
 const FEEDS = [
@@ -148,10 +146,10 @@ async function fetchViaCodetabs(feed) {
   } finally { t.clear(); }
 }
 
-// Strategy 2: corsproxy.io — secondary fallback
-async function fetchViaCorsproxy(feed) {
+// Strategy 2: allorigins.win /raw — secondary fallback (returns raw content)
+async function fetchViaAlloriginsRaw(feed) {
   const t   = timeout(12000);
-  const url = `https://corsproxy.io/?url=${encodeURIComponent(feed.url)}`;
+  const url = `https://api.allorigins.win/raw?url=${encodeURIComponent(feed.url)}`;
   try {
     const res = await fetch(url, { signal: t.signal });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -161,36 +159,28 @@ async function fetchViaCorsproxy(feed) {
   } finally { t.clear(); }
 }
 
-// Strategy 3: rss2json.com — last resort (rate-limited on free tier; works for FeedBurner feeds)
-async function fetchViaRss2Json(feed) {
-  const t   = timeout(8000);
-  const url = `${RSS2JSON}?rss_url=${encodeURIComponent(feed.url)}&count=12`;
+// Strategy 3: allorigins.win /get — last resort (returns JSON envelope with XML in .contents)
+async function fetchViaAlloriginsGet(feed) {
+  const t   = timeout(12000);
+  const url = `https://api.allorigins.win/get?url=${encodeURIComponent(feed.url)}`;
   try {
     const res  = await fetch(url, { signal: t.signal });
     t.clear();
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const json = await res.json();
-    if (json.status !== 'ok') throw new Error(json.message || 'rss2json error');
-    return {
-      source: feed.name, category: feed.category, color: feed.color,
-      items: json.items.map((item) => ({
-        title:      item.title || 'Untitled',
-        link:       item.link  || '',
-        pubDate:    item.pubDate || null,
-        snippet:    stripHtml(item.description || item.content || '').slice(0, 220),
-        categories: Array.isArray(item.categories) ? item.categories.slice(0, 3) : [],
-      })),
-    };
+    const xml  = json.contents;
+    if (!xml || xml.trim().length < 50) throw new Error('Empty contents');
+    return parseXml(xml, feed);
   } finally { t.clear(); }
 }
 
 // Try all three strategies in sequence
 async function fetchFeed(feed) {
   try { return await fetchViaCodetabs(feed); }
-  catch (e1) { console.warn(`[codetabs]   ${feed.name}: ${e1.message}`); }
-  try { return await fetchViaCorsproxy(feed); }
-  catch (e2) { console.warn(`[corsproxy]  ${feed.name}: ${e2.message}`); }
-  return await fetchViaRss2Json(feed); // throws if this also fails
+  catch (e1) { console.warn(`[codetabs]      ${feed.name}: ${e1.message}`); }
+  try { return await fetchViaAlloriginsRaw(feed); }
+  catch (e2) { console.warn(`[allorigins/raw] ${feed.name}: ${e2.message}`); }
+  return await fetchViaAlloriginsGet(feed); // throws if this also fails
 }
 
 // ===== LOAD ALL FEEDS =====
