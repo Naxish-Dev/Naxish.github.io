@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Interactive Network Designer — Subnet Calculator, VLSM Planner, Binary Visualizer, Packet Flow Simulator, and Subnet Challenge Mode." />
+  <title>Network Tools | Naxish</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="../images/favicon/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="../images/favicon/favicon-16x16.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/projects/nettools.css" />
+</head>
+<body>
+  <div class="bg-grid" aria-hidden="true"></div>
+  <div class="bg-glow" aria-hidden="true"></div>
+  <div class="scanline" aria-hidden="true"></div>
+
+  <header>
+    <div class="header-left">
+      <div class="logo mono"><span class="logo-bracket">[</span>NET<span class="logo-accent">TOOLS</span><span class="logo-bracket">]</span><span class="cursor blink">_</span></div>
+      <p class="tagline mono">// Interactive Network Designer &amp; Learning Suite</p>
+    </div>
+    <a href="../index.html" class="back-btn mono">← HOME</a>
+  </header>
+
+  <nav class="tab-nav" role="tablist" aria-label="Tool selection">
+    <button class="tab-btn active" role="tab" aria-selected="true"  data-tab="subnet">SUBNET CALC</button>
+    <button class="tab-btn"        role="tab" aria-selected="false" data-tab="vlsm">VLSM</button>
+    <button class="tab-btn"        role="tab" aria-selected="false" data-tab="binary">BINARY VIZ</button>
+    <button class="tab-btn"        role="tab" aria-selected="false" data-tab="flow">PACKET FLOW</button>
+    <button class="tab-btn"        role="tab" aria-selected="false" data-tab="challenge">CHALLENGE</button>
+  </nav>
+
+  <main>
+
+    <!-- ===== TAB 1: SUBNET CALCULATOR ===== -->
+    <div class="tab-panel active" id="tab-subnet" role="tabpanel">
+      <div class="sc-layout">
+        <div class="sc-input-col">
+          <div class="field-group">
+            <label class="field-label mono" for="sc-ip">IP ADDRESS</label>
+            <input class="field-input mono" type="text" id="sc-ip" value="192.168.1.100" maxlength="15" spellcheck="false" autocomplete="off" />
+          </div>
+          <div class="field-group">
+            <label class="field-label mono">CIDR — /<span id="sc-cidr-disp">24</span></label>
+            <div class="range-row">
+              <input type="range" id="sc-cidr-range" class="cidr-range" min="0" max="32" value="24" />
+              <input type="number" id="sc-cidr-num" class="field-input mono cidr-num" min="0" max="32" value="24" />
+            </div>
+          </div>
+          <div class="or-divider mono">— OR ENTER MASK —</div>
+          <div class="field-group">
+            <label class="field-label mono" for="sc-mask">SUBNET MASK</label>
+            <input class="field-input mono" type="text" id="sc-mask" value="255.255.255.0" maxlength="15" spellcheck="false" autocomplete="off" />
+          </div>
+          <div class="sc-class-badge" id="sc-class-badge"></div>
+        </div>
+        <div class="sc-results" id="sc-results"></div>
+      </div>
+    </div>
+
+    <!-- ===== TAB 2: VLSM PLANNER ===== -->
+    <div class="tab-panel" id="tab-vlsm" role="tabpanel">
+      <div class="vlsm-top-bar">
+        <div class="field-group horiz">
+          <label class="field-label mono" for="vlsm-ip">BASE NETWORK</label>
+          <input class="field-input mono short" type="text" id="vlsm-ip" value="10.0.0.0" spellcheck="false" autocomplete="off" />
+          <span class="mono muted-text">/</span>
+          <input class="field-input mono cidr-num" type="number" id="vlsm-cidr" min="1" max="30" value="16" />
+        </div>
+        <div class="field-group horiz">
+          <label class="field-label mono" for="vlsm-mode">MODE</label>
+          <select class="field-input mono" id="vlsm-mode">
+            <option value="auto">AUTO (by size)</option>
+            <option value="manual">MANUAL (set CIDR)</option>
+          </select>
+        </div>
+        <div class="vlsm-btns">
+          <button class="tool-btn primary mono" id="vlsm-add-btn">+ ADD ROW</button>
+          <button class="tool-btn accent mono"  id="vlsm-calc-btn">CALCULATE ▶</button>
+          <button class="tool-btn mono"         id="vlsm-reset-btn">↺ RESET</button>
+        </div>
+      </div>
+      <div class="vlsm-dept-area">
+        <div class="vlsm-dept-hdr mono" id="vlsm-dept-hdr">
+          <span>DEPARTMENT</span><span>HOSTS NEEDED</span><span class="vlsm-cidr-hdr" style="visibility:hidden">CIDR</span><span></span>
+        </div>
+        <div id="vlsm-dept-list"></div>
+      </div>
+      <div id="vlsm-results" hidden></div>
+    </div>
+
+    <!-- ===== TAB 3: BINARY VISUALIZER ===== -->
+    <div class="tab-panel" id="tab-binary" role="tabpanel">
+      <div class="bv-top-bar">
+        <div class="field-group horiz">
+          <label class="field-label mono" for="bv-ip">IP ADDRESS</label>
+          <input class="field-input mono short" type="text" id="bv-ip" value="192.168.1.100" spellcheck="false" autocomplete="off" />
+          <span class="mono muted-text">/</span>
+          <input class="field-input mono cidr-num" type="number" id="bv-cidr" min="0" max="32" value="24" />
+          <button class="tool-btn primary mono" id="bv-btn">VISUALIZE</button>
+        </div>
+        <div class="bv-legend">
+          <span class="bit-demo bit-net"></span><span class="mono muted-text">Network bits</span>
+          <span class="bit-demo bit-host"></span><span class="mono muted-text">Host bits</span>
+        </div>
+      </div>
+      <div id="bv-display" class="bv-display">
+        <p class="mono muted-text" style="padding:1rem">Press VISUALIZE to render the binary breakdown.</p>
+      </div>
+    </div>
+
+    <!-- ===== TAB 4: PACKET FLOW SIMULATOR ===== -->
+    <div class="tab-panel" id="tab-flow" role="tabpanel">
+      <div class="pf-top-bar">
+        <div class="scenario-group">
+          <span class="field-label mono">SCENARIO</span>
+          <button class="scenario-btn active" data-scenario="arp">ARP RESOLUTION</button>
+          <button class="scenario-btn" data-scenario="routing">INTER-SUBNET ROUTING</button>
+          <button class="scenario-btn" data-scenario="nat">NAT TRANSLATION</button>
+          <button class="scenario-btn" data-scenario="journey">PACKET JOURNEY</button>
+        </div>
+        <div class="pf-ctrl-group">
+          <button class="tool-btn primary mono" id="pf-start">▶ START</button>
+          <button class="tool-btn mono" id="pf-next"  disabled>NEXT →</button>
+          <button class="tool-btn mono" id="pf-auto"  disabled>⚡ AUTO</button>
+          <button class="tool-btn mono" id="pf-reset">↺ RESET</button>
+          <span class="mono muted-text" id="pf-counter">STEP 0 / 0</span>
+        </div>
+      </div>
+      <div class="pf-topology" id="pf-topology"></div>
+      <div class="pf-info-row">
+        <div class="pf-step-panel">
+          <span class="step-badge mono" id="pf-badge">IDLE</span>
+          <div>
+            <div class="step-title" id="pf-title">Select a scenario and press START</div>
+            <div class="step-desc mono" id="pf-desc"></div>
+          </div>
+        </div>
+        <div class="pf-packet-panel">
+          <div class="pf-packet-hdr mono">◈ FRAME / PACKET DETAILS</div>
+          <div class="pf-packet-fields" id="pf-packet-fields"><span class="mono muted-text">No packet yet</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== TAB 5: CHALLENGE MODE ===== -->
+    <div class="tab-panel" id="tab-challenge" role="tabpanel">
+      <div class="ch-top-bar">
+        <div class="ch-stats">
+          <div class="ch-stat"><div class="ch-stat-val mono" id="ch-score">—</div><div class="ch-stat-key mono">SCORE</div></div>
+          <div class="ch-stat"><div class="ch-stat-val mono" id="ch-streak">—</div><div class="ch-stat-key mono">STREAK</div></div>
+          <div class="ch-stat"><div class="ch-stat-val mono timer-val" id="ch-timer">—</div><div class="ch-stat-key mono">SECONDS</div></div>
+          <div class="ch-stat"><div class="ch-stat-val mono" id="ch-progress">0/10</div><div class="ch-stat-key mono">PROGRESS</div></div>
+        </div>
+        <div class="ch-controls">
+          <span class="field-label mono">DIFFICULTY</span>
+          <button class="diff-btn active" data-diff="easy">EASY</button>
+          <button class="diff-btn" data-diff="medium">MEDIUM</button>
+          <button class="diff-btn" data-diff="hard">HARD</button>
+          <button class="tool-btn primary mono" id="ch-start">▶ START</button>
+        </div>
+      </div>
+      <div class="ch-area" id="ch-area">
+        <div class="ch-idle mono">Select a difficulty level and press START to begin</div>
+      </div>
+    </div>
+
+  </main>
+
+  <footer>
+    <span class="mono footer-text">NETTOOLS v1.0 // Subnet Calc · VLSM · Binary Viz · Packet Flow · Challenge // Naxish</span>
+  </footer>
+
+  <script src="../js/projects/nettools.js"></script>
+</body>
+</html>

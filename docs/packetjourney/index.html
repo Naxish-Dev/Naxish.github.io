@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Interactive packet journey visualization. Watch a TCP/IP packet traverse a switch, firewall, router, and the internet — seeing MAC rewrites, NAT, TTL changes, and TCP flags at every hop." />
+  <title>Packet Journey | Naxish</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="../images/favicon/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="../images/favicon/favicon-16x16.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/projects/packetjourney.css" />
+</head>
+<body>
+
+  <div class="bg-grid" aria-hidden="true"></div>
+  <div class="bg-glow" aria-hidden="true"></div>
+  <div class="scanline" aria-hidden="true"></div>
+
+  <!-- Header -->
+  <header>
+    <div class="header-left">
+      <div class="logo mono">
+        <span class="logo-bracket">[</span>PACKET<span class="logo-accent">JOURNEY</span><span class="logo-bracket">]</span>
+        <span class="cursor blink">_</span>
+      </div>
+      <p class="tagline mono">// Interactive Network Packet Traversal Simulator</p>
+    </div>
+    <div class="header-right">
+      <a href="../index.html" class="back-btn mono">← HOME</a>
+    </div>
+  </header>
+
+  <!-- Controls -->
+  <nav class="controls" aria-label="Simulation controls">
+    <div class="ctrl-group">
+      <button class="ctrl-btn primary" id="sendBtn">▶ SEND PACKET</button>
+      <button class="ctrl-btn" id="nextBtn" disabled>NEXT HOP →</button>
+      <button class="ctrl-btn" id="autoBtn" disabled>⚡ AUTO-PLAY</button>
+      <button class="ctrl-btn" id="resetBtn">↺ RESET</button>
+    </div>
+    <div class="ctrl-group">
+      <label class="ws-toggle-label mono" for="wsToggle">
+        <input type="checkbox" id="wsToggle" class="ws-toggle-input" />
+        <span class="ws-toggle-track" aria-hidden="true"></span>
+        WIRESHARK VIEW
+      </label>
+    </div>
+    <div class="ctrl-group mono step-counter" id="step-counter" aria-live="polite">STEP 0 / 6</div>
+  </nav>
+
+  <!-- Topology -->
+  <section class="topology-section" aria-label="Network topology diagram">
+    <div class="topology-scroll">
+      <div class="topology-track" id="topology-track">
+
+        <div class="topo-node pending" id="node-0">
+          <div class="node-body"><span class="node-emoji" aria-hidden="true">💻</span></div>
+          <div class="node-label mono">CLIENT</div>
+          <div class="node-sub mono">192.168.1.10</div>
+        </div>
+        <div class="topo-connector" id="conn-0"></div>
+
+        <div class="topo-node pending" id="node-1">
+          <div class="node-body"><span class="node-emoji" aria-hidden="true">🔀</span></div>
+          <div class="node-label mono">L2 SWITCH</div>
+          <div class="node-sub mono">Layer 2</div>
+        </div>
+        <div class="topo-connector" id="conn-1"></div>
+
+        <div class="topo-node pending" id="node-2">
+          <div class="node-body"><span class="node-emoji" aria-hidden="true">🛡️</span></div>
+          <div class="node-label mono">FIREWALL</div>
+          <div class="node-sub mono">NAT / ACL</div>
+        </div>
+        <div class="topo-connector" id="conn-2"></div>
+
+        <div class="topo-node pending" id="node-3">
+          <div class="node-body"><span class="node-emoji" aria-hidden="true">📡</span></div>
+          <div class="node-label mono">ISP ROUTER</div>
+          <div class="node-sub mono">BGP</div>
+        </div>
+        <div class="topo-connector" id="conn-3"></div>
+
+        <div class="topo-node pending" id="node-4">
+          <div class="node-body"><span class="node-emoji" aria-hidden="true">🌐</span></div>
+          <div class="node-label mono">INTERNET</div>
+          <div class="node-sub mono">~8 Hops</div>
+        </div>
+        <div class="topo-connector" id="conn-4"></div>
+
+        <div class="topo-node pending" id="node-5">
+          <div class="node-body"><span class="node-emoji" aria-hidden="true">🖥️</span></div>
+          <div class="node-label mono">SERVER</div>
+          <div class="node-sub mono">8.8.8.8</div>
+        </div>
+
+        <!-- Packet dot — positioned by JS -->
+        <div class="packet-dot" id="packet-dot" aria-hidden="true" hidden></div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Step banner -->
+  <div class="step-banner" id="step-banner" aria-live="polite">
+    <span class="step-badge mono" id="step-badge">IDLE</span>
+    <div class="step-info">
+      <h2 class="step-title" id="step-title">Waiting for packet...</h2>
+      <p class="step-desc" id="step-desc">Press SEND PACKET to begin the simulation</p>
+    </div>
+  </div>
+
+  <!-- Panels row -->
+  <div class="panels-row">
+
+    <!-- Packet headers panel -->
+    <div class="panel">
+      <div class="panel-hdr">
+        <span class="panel-title mono">◈ PACKET HEADERS</span>
+      </div>
+
+      <!-- Ethernet -->
+      <div class="layer-block">
+        <div class="layer-label eth-accent mono">▸ ETHERNET <span class="layer-badge">L2</span></div>
+        <div class="field-grid">
+          <span class="field-key mono">Src MAC</span>   <span class="field-val mono" id="f-eth-src">—</span>
+          <span class="field-key mono">Dst MAC</span>   <span class="field-val mono" id="f-eth-dst">—</span>
+          <span class="field-key mono">EtherType</span> <span class="field-val mono" id="f-eth-type">—</span>
+        </div>
+      </div>
+
+      <!-- IP -->
+      <div class="layer-block">
+        <div class="layer-label ip-accent mono">▸ IP (IPv4) <span class="layer-badge">L3</span></div>
+        <div class="field-grid">
+          <span class="field-key mono">Src IP</span>    <span class="field-val mono" id="f-ip-src">—</span>
+          <span class="field-key mono">Dst IP</span>    <span class="field-val mono" id="f-ip-dst">—</span>
+          <span class="field-key mono">TTL</span>       <span class="field-val mono" id="f-ip-ttl">—</span>
+          <span class="field-key mono">Protocol</span> <span class="field-val mono" id="f-ip-proto">—</span>
+        </div>
+      </div>
+
+      <!-- TCP -->
+      <div class="layer-block">
+        <div class="layer-label tcp-accent mono">▸ TCP <span class="layer-badge">L4</span></div>
+        <div class="field-grid">
+          <span class="field-key mono">Src Port</span> <span class="field-val mono" id="f-tcp-sport">—</span>
+          <span class="field-key mono">Dst Port</span> <span class="field-val mono" id="f-tcp-dport">—</span>
+          <span class="field-key mono">Flags</span>    <span class="field-val mono" id="f-tcp-flags">—</span>
+          <span class="field-key mono">Seq</span>      <span class="field-val mono" id="f-tcp-seq">—</span>
+          <span class="field-key mono">Ack</span>      <span class="field-val mono" id="f-tcp-ack">—</span>
+          <span class="field-key mono">Window</span>   <span class="field-val mono" id="f-tcp-win">—</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Changes panel -->
+    <div class="panel">
+      <div class="panel-hdr">
+        <span class="panel-title mono">⚡ WHAT HAPPENED AT THIS HOP</span>
+      </div>
+      <div class="changes-list" id="changes-list">
+        <p class="changes-empty mono">No data yet. Send a packet to begin.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Wireshark panel -->
+  <section class="wireshark-section" id="wireshark-section" hidden aria-label="Wireshark-style packet view">
+    <div class="ws-panel-hdr">
+      <span aria-hidden="true">🦈</span>
+      <span class="mono ws-panel-title">WIRESHARK EQUIVALENT VIEW</span>
+    </div>
+    <div class="ws-body" id="ws-body">
+      <p class="ws-placeholder mono">Send a packet to see the capture.</p>
+    </div>
+  </section>
+
+  <footer>
+    <span class="mono footer-text">PACKET JOURNEY v1.0 // Educational TCP/IP Visualization // Naxish</span>
+  </footer>
+
+  <script src="../js/projects/packetjourney.js"></script>
+</body>
+</html>
