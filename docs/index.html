@@ -33,21 +33,24 @@
     <!-- Music Player Bar -->
     <div class="music-player-bar">
       <div class="music-player-content">
-        <button id="prevBtn" class="player-btn" aria-label="Previous song">⏮</button>
-        <button id="playPauseBtn" class="player-btn" aria-label="Play/Pause music">
-          <span class="play-icon">▶</span>
-          <span class="pause-icon" style="display: none;">⏸</span>
-        </button>
-        <button id="nextBtn" class="player-btn" aria-label="Next song">⏭</button>
+        <div class="player-controls">
+          <div class="player-buttons">
+            <button id="prevBtn" class="player-btn" aria-label="Previous song">⏮</button>
+            <button id="playPauseBtn" class="player-btn" aria-label="Play/Pause music">
+              <span class="play-icon">▶</span>
+              <span class="pause-icon" style="display: none;">⏸</span>
+            </button>
+            <button id="nextBtn" class="player-btn" aria-label="Next song">⏭</button>
+          </div>
+          <div class="volume-control">
+            <input type="range" id="volumeSlider" class="volume-slider" min="0" max="100" value="70" aria-label="Volume control">
+          </div>
+        </div>
         <div class="music-info">
           <span id="songTitle" class="song-title">Loading...</span>
           <div class="progress-bar">
             <div id="progressFill" class="progress-fill"></div>
           </div>
-        </div>
-        <div class="volume-control">
-          <span class="volume-icon">🔊</span>
-          <input type="range" id="volumeSlider" class="volume-slider" min="0" max="100" value="70" aria-label="Volume control">
         </div>
       </div>
     </div>
@@ -110,7 +113,7 @@
           <a href="projects/cyber-dashboard.html" target="_blank" rel="noopener noreferrer" class="project-link" aria-label="Open SOC Dashboard Simulator">Go to project</a>
         </div>
         <div class="project">
-          <h3>CyberFeed — Security &amp; Tech Intelligence</h3>
+          <h3>CyberFeed - Security &amp; Tech Intelligence</h3>
           <p>
             Live RSS news dashboard aggregating security and tech feeds from The Hacker News, Krebs on Security, Ars Technica, and more. Features real-time filtering, search, and auto-refresh.
           </p>
@@ -192,15 +195,53 @@
       <h2 id="skills-heading">Professional Experience</h2>
       <ul role="list">
         <li class="info-box"> <!-- WIP Stlying with deeper explaination -->
-          Network Engineering (Cisco, Aruba, Ubiquiti, Fortinet, Netgear, HP)
+          <span class="skill-title">Network Engineering</span>
+          <span class="skill-detail">(Cisco, Aruba, Ubiquiti, Fortinet, Netgear, HPE)</span>
         </li>
-        <li>Network Architecture (Hierarchical, Spine-Leaf, VXLAN, High Availability)</li>
-        <li>Security & Penetration (Metasploit, Kali/Parrot OS, Wireshark, Nmap)</li>
-        <li>Programming (Python, HTML/CSS, JavaScript, C#, C++, Lua, TypeScript)</li>
-        <li>Powershell/Bash/shell Automation</li>
-        <li>SDN (Ryu, OpenFlow, Mininet, OpenDaylight)</li>
-        <li>Linux (Ubuntu, Debian, RHEL, Rocky)</li>
-        <li>365 Administrator (Sharepoint etc.)</li>
+        <li>
+          <span class="skill-title">Networking</span>
+          <span class="skill-detail">(Switching, Routing, Segmentation, TCP/IP)</span>
+        </li>
+        <li>
+          <span class="skill-title">Network Architecture</span>
+          <span class="skill-detail">(Hierarchical, Spine-Leaf, VXLAN, High Availability)</span>
+        </li>
+        <li>
+          <span class="skill-title">Offensive Security</span>
+          <span class="skill-detail">(Metasploit, Kali/Parrot OS, Wireshark, Nmap)</span>
+        </li>
+        <li>
+          <span class="skill-title">Cybersecurity</span>
+          <span class="skill-detail">(SIEM, EDR, XDR, MDR, Threat Intelligence, Threat Hunt)</span>
+        </li>
+        <li>
+          <span class="skill-title">Security Operations</span>
+          <span class="skill-detail">(Splunk, Elastic, Sentinel, Defender XDR, ServiceNow, CrowdStrike, Netscout Arbor)</span>
+        </li>
+        <li>
+          <span class="skill-title">Programming</span>
+          <span class="skill-detail">(Python, C#, C++, JavaScript, TypeScript, Lua, HTML/CSS)</span>
+        </li>
+        <li>
+          <span class="skill-title">Automation</span>
+          <span class="skill-detail">(PowerShell, Bash, Shell Scripting)</span>
+        </li>
+        <li>
+          <span class="skill-title">SDN</span>
+          <span class="skill-detail">(Ryu, OpenFlow, Mininet, OpenDaylight)</span>
+        </li>
+        <li>
+          <span class="skill-title">Linux</span>
+          <span class="skill-detail">(Ubuntu, Debian, RHEL, Rocky)</span>
+        </li>
+        <li>
+          <span class="skill-title">365 Administrator</span>
+          <span class="skill-detail">(SharePoint etc.)</span>
+        </li>
+        <li>
+          <span class="skill-title">Virtualization</span>
+          <span class="skill-detail">(Proxmox VE, VMware ESXi, Hyper-V)</span>
+        </li>
       </ul>
     </section>
     <!-- WIP WRITEUPS SECTION
@@ -214,17 +255,20 @@
       <ul role="list">
         <li class="clickable-box">
           <a href="https://www.youtube.com/@kwallaceccie" target="_blank" rel="noopener noreferrer" aria-label="Kevin Wallace YouTube channel">
-            Kevin Wallace (Networking Cisco Specialist)
+            <span class="skill-title">Kevin Wallace</span>
+            <span class="skill-detail">(Networking Cisco Specialist)</span>
           </a>
         </li>
         <li class="clickable-box">
           <a href="https://www.youtube.com/@davidbombal" target="_blank" rel="noopener noreferrer" aria-label="David Bombal YouTube channel">
-            David Bombal (Networking & Security)
+            <span class="skill-title">David Bombal</span>
+            <span class="skill-detail">(Networking &amp; Security)</span>
           </a>
         </li>
         <li class="clickable-box">
           <a href="https://www.youtube.com/@NetworkChuck" target="_blank" rel="noopener noreferrer" aria-label="NetworkChuck YouTube channel">
-            Networkchuck (Networking & Service fun)
+            <span class="skill-title">Networkchuck</span>
+            <span class="skill-detail">(Networking &amp; Service fun)</span>
           </a>
         </li>
       </ul>
