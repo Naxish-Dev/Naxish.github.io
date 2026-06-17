@@ -41,6 +41,34 @@ const FEEDS = [
 const CACHE_KEY     = 'cyberfeed_cache';
 const CACHE_TTL_MS  = (6 * 60 + 15) * 60 * 1000; // 6h 15m — 15-min buffer after the Worker's 6-hour KV cron to ensure fresh data
 
+// ===== READ ARTICLES =====
+const READ_KEY = 'cyberfeed_read';
+
+function loadRead() {
+  try {
+    const raw = localStorage.getItem(READ_KEY);
+    return raw ? new Set(JSON.parse(raw)) : new Set();
+  } catch (_) { return new Set(); }
+}
+
+function saveRead() {
+  try { localStorage.setItem(READ_KEY, JSON.stringify([...state.read])); } catch (_) {}
+}
+
+// Remove read entries whose links are no longer present in the current feed batch.
+function pruneRead() {
+  if (state.read.size === 0) return;
+  const allLinks = new Set();
+  for (const feed of state.feeds)
+    for (const item of feed.items)
+      allLinks.add(item.link);
+  let changed = false;
+  for (const link of state.read) {
+    if (!allLinks.has(link)) { state.read.delete(link); changed = true; }
+  }
+  if (changed) saveRead();
+}
+
 function saveCache(feeds) {
   try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), feeds })); } catch (_) {}
 }
@@ -58,7 +86,7 @@ function loadCache() {
 
 // ===== STATE =====
 let isFetching = false; // guard against concurrent loadFeeds calls
-let state = { feeds: [], filter: 'all', sort: 'date', search: '', refreshTimer: null, cacheCountdown: null };
+let state = { feeds: [], filter: 'all', sort: 'date', search: '', refreshTimer: null, cacheCountdown: null, read: loadRead() };
 
 // ===== DOM REFS =====
 const $ = (sel) => document.querySelector(sel);
@@ -82,6 +110,10 @@ const els = {
   searchInput:   $('#search-input'),
   searchClear:   $('#search-clear'),
   footerSources: $('#footer-sources'),
+  readSection:   $('#read-section'),
+  readList:      $('#read-list'),
+  readCount:     $('#read-count'),
+  readClearBtn:  $('#read-clear-btn'),
 };
 
 // ===== SHOW / HIDE HELPERS =====
@@ -215,6 +247,7 @@ async function loadFeeds() {
   if (cached) {
     const remainingSec = Math.ceil((CACHE_TTL_MS - cached.ageMs) / 1000);
     state.feeds = cached.feeds;
+    pruneRead();
     hideEl(els.errorScreen);
     const loaded = cached.feeds.filter((f) => f.items.length > 0);
     setStatus('online', `CACHED — ${loaded.length} SOURCES`);
@@ -245,6 +278,7 @@ async function loadFeeds() {
     }
 
     state.feeds = feeds;
+    pruneRead();
     saveCache(feeds);
     hideEl(els.errorScreen);
     setStatus('online', `LIVE — ${loaded.length} SOURCES`);
@@ -273,7 +307,7 @@ function buildCard(item, source, category, color) {
   const snippet = item.snippet ? `<p class="card-snippet">${escapeHtml(item.snippet)}</p>` : '';
   return `
     <a class="card" href="${escapeAttr(item.link)}" target="_blank" rel="noopener noreferrer"
-       data-category="${escapeAttr(category)}" title="Go to source">
+       data-category="${escapeAttr(category)}" data-link="${escapeAttr(item.link)}" title="Go to source">
       <div class="card-accent"></div>
       <div class="card-body">
         <div class="card-meta">
@@ -284,6 +318,7 @@ function buildCard(item, source, category, color) {
         <h2 class="card-title">${escapeHtml(item.title)}</h2>
         ${snippet}
       </div>
+      <button class="card-read-btn mono" data-link="${escapeAttr(item.link)}" title="Mark as read">✓ READ</button>
     </a>`;
 }
 
@@ -293,7 +328,9 @@ function getArticles() {
   let articles = [];
   for (const feed of state.feeds) {
     if (state.filter !== 'all' && feed.category !== state.filter) continue;
-    for (const item of feed.items) articles.push({ ...item, source: feed.source, category: feed.category, color: feed.color });
+    for (const item of feed.items) {
+      if (!state.read.has(item.link)) articles.push({ ...item, source: feed.source, category: feed.category, color: feed.color });
+    }
   }
   if (query) {
     articles = articles.filter((a) =>
@@ -320,14 +357,45 @@ function renderGrid() {
     els.emptyMsg.textContent = state.search
       ? `NO RESULTS FOR "${state.search.toUpperCase()}"`
       : 'NO ARTICLES MATCH THE CURRENT FILTER';
+  } else {
+    hideEl(els.emptyScreen);
+    showEl(els.feedGrid);
+    els.feedGrid.innerHTML = articles
+      .map((a, i) => buildCard(a, a.source, a.category, a.color)
+        .replace('<a ', `<a style="--source-color:${a.color};animation-delay:${Math.min(i*40,600)}ms;" `))
+      .join('');
+  }
+  renderReadSection();
+}
+
+// ===== RENDER READ SECTION =====
+function renderReadSection() {
+  // Collect all read articles (across all feeds, ignoring active filters)
+  const readArticles = [];
+  for (const feed of state.feeds) {
+    for (const item of feed.items) {
+      if (state.read.has(item.link)) {
+        readArticles.push({ ...item, source: feed.source, category: feed.category, color: feed.color });
+      }
+    }
+  }
+
+  if (readArticles.length === 0) {
+    hideEl(els.readSection);
     return;
   }
-  hideEl(els.emptyScreen);
-  showEl(els.feedGrid);
-  els.feedGrid.innerHTML = articles
-    .map((a, i) => buildCard(a, a.source, a.category, a.color)
-      .replace('<a ', `<a style="--source-color:${a.color};animation-delay:${Math.min(i*40,600)}ms;" `))
-    .join('');
+
+  showEl(els.readSection);
+  els.readCount.textContent = readArticles.length;
+  els.readList.innerHTML = readArticles.map((a) => {
+    const date = formatDate(a.pubDate);
+    return `<li class="read-item">
+      <span class="read-item-source" style="color:${a.color};border-color:${a.color}40;">${escapeHtml(a.source)}</span>
+      <a class="read-item-title" href="${escapeAttr(a.link)}" target="_blank" rel="noopener noreferrer" title="${escapeHtml(a.title)}">${escapeHtml(a.title)}</a>
+      ${date ? `<span class="read-item-date">${escapeHtml(date)}</span>` : ''}
+      <button class="read-unread-btn mono" data-link="${escapeAttr(a.link)}" title="Mark as unread">↩ UNREAD</button>
+    </li>`;
+  }).join('');
 }
 
 // ===== STATS =====
@@ -399,6 +467,35 @@ function escapeAttr(str) {
   const s = String(str).trim();
   return /^https?:\/\//i.test(s) ? s.replace(/"/g,'%22') : '#';
 }
+
+// ===== READ / UNREAD ACTIONS =====
+els.feedGrid.addEventListener('click', (e) => {
+  const btn = e.target.closest('.card-read-btn');
+  if (!btn) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const link = btn.dataset.link;
+  if (!link || link === '#') return;
+  state.read.add(link);
+  saveRead();
+  renderGrid();
+});
+
+els.readList.addEventListener('click', (e) => {
+  const btn = e.target.closest('.read-unread-btn');
+  if (!btn) return;
+  const link = btn.dataset.link;
+  if (!link) return;
+  state.read.delete(link);
+  saveRead();
+  renderGrid();
+});
+
+els.readClearBtn.addEventListener('click', () => {
+  state.read.clear();
+  saveRead();
+  renderGrid();
+});
 
 // ===== BOOT =====
 loadFeeds();
